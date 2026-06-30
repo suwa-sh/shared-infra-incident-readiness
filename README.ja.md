@@ -57,7 +57,21 @@ cp examples/dpa/sample-dpa-answers.yaml         my-dpa.yaml
 bin/siir check-responsibility my-responsibility.yaml
 ```
 
-出力の `BLOCK`(未割当・説明責任の分裂)を先に潰し、`REVISE`(`tbd` のグレーゾーン)を計画的に埋めます。詳細は [docs/01](docs/01_responsibility_boundary.md) を参照してください。
+出力例(抜粋):
+
+```text
+Target: 共用メール基盤 (6 ISP OEM)
+Responsibility readiness: 83%
+
+[OK] RB01 利用者向け窓口・本人通知: OK (ok)
+[..] RB04 プレスリリース (共同 / 個別の決定): REVISE (accountability_deferred)
+    gray (tbd): oem_operator
+[NG] RB12 平時 / 事故時の合同演習主催: BLOCK (unassigned)
+
+Conclusion: BLOCK
+```
+
+`[OK]` ok / `[..]` revise / `[NG]` block を行ごとに示し、最後に総合判定を返します。`BLOCK`(未割当・説明責任の分裂)を先に潰し、`REVISE`(`tbd` のグレーゾーン)を計画的に埋めます。詳細は [docs/01](docs/01_responsibility_boundary.md) を参照してください。
 
 ### ステップ 2 — 契約(DPA)の抜けを点検する(平時)
 
@@ -67,7 +81,20 @@ bin/siir check-responsibility my-responsibility.yaml
 bin/siir check-dpa my-dpa.yaml
 ```
 
-必須条項が `missing` なら `BLOCK` になります。詳細は [docs/03](docs/03_dpa_clauses.md) を参照してください。
+出力例(抜粋):
+
+```text
+Target: 共用メール基盤 委託契約 v1
+DPA coverage: 70%
+
+[OK] DPA01 処理内容の特定: PRESENT (required)
+[NG] DPA03 委託先→委託元 漏えい通知SLA: MISSING (required)
+[..] DPA05 規制当局通知の主体明示: PARTIAL (required)
+
+Conclusion: BLOCK
+```
+
+必須条項が `missing` なら `BLOCK`、`partial` があれば `REVISE` になります。詳細は [docs/03](docs/03_dpa_clauses.md) を参照してください。
 
 ### ステップ 3 — 平時の演習とランブックを用意する
 
@@ -78,7 +105,37 @@ bin/siir render-runbook my-responsibility.yaml --scenario rce-6brand
 bin/siir tabletop --scenario rce-6brand my-responsibility.yaml
 ```
 
-利用できるシナリオ id は `bin/siir list-definitions` で確認できます。詳細は [docs/04](docs/04_tabletop_and_runbook.md) を参照してください。
+`render-runbook` の出力例(Markdown、抜粋):
+
+```text
+# 初動ランブック: 共用メール基盤 (6 ISP OEM)
+
+- シナリオ: 共有メール基盤の第三者製SW RCE → 6ブランド同時公表
+- 想定影響ブランド数: 6
+
+## Stage 1. 責任境界表 (この事故で誰が何の責任か)
+
+| 項目 | Accountable | Responsible | 都度協議 | 出典 |
+|---|---|---|---|---|
+| RB02 * 個情委への速報・確報 | 委託元ISP | OEM基盤運用者 | - | org |
+| RB04 * プレスリリース (共同 / 個別の決定) | - | - | OEM基盤運用者 | org |
+... (Stage 2 初動ランブック / Stage 3 Communication Tree が続く)
+```
+
+`tabletop` の出力例(Markdown、抜粋):
+
+```text
+# Tabletop 演習プログラム: 共有メール基盤の第三者製SW RCE → 6ブランド同時公表
+
+- 所要時間: 90 分
+
+## 注入イベント (時系列)
+- T+0分: 1ブランドの EDR が不審なプロセス実行を検知。共有基盤起因かは未確定
+- T+30分: 報道機関から「6社共通基盤か」と問い合わせ。24h SLA の第一報期限が接近
+... (ファシリ設問 / focus 項目が続く)
+```
+
+出力は Markdown なので、そのまま社内 wiki やランブックに貼れます。利用できるシナリオ id は `bin/siir list-definitions` で確認できます。詳細は [docs/04](docs/04_tabletop_and_runbook.md) を参照してください。
 
 ### ステップ 4 — 事故が起きたら通知 SLA を検証する(事故時)
 
@@ -89,7 +146,22 @@ cp examples/records/sample-incident.json my-incident.json
 bin/siir validate-record my-incident.json --level extended
 ```
 
-通知タイムラインの SLA 違反(`breach`)や時系列の逆転を検出します。詳細は [docs/02](docs/02_incident_raci_and_sla.md) を参照してください。
+出力例:
+
+```text
+Record schema: incident_record_extended
+[OK] schema: valid
+
+Notification SLA:
+  [OK] DPA03 委託先→委託元 漏えい通知SLA: sent 11.0h after awareness (<= 24h)
+  [NG] DPA03 委託先→委託元 漏えい通知SLA (確報): sent 102.0h after awareness, SLA is 72h
+  [i] OB03 総務省への重大事故報告: non-numeric deadline; review manually
+  [..] OB04 本人への通知: not sent yet (pending)
+
+Conclusion: BLOCK
+```
+
+まずスキーマ(影響ブランド・共有コンポーネント・通知タイムラインの形式)を検証し、続いて各通知が SLA に間に合っているかを照合します。数値締切の超過(`breach`)や時系列の逆転を検出し、「遅滞なく」などの非数値締切は手動レビュー(`[i]`)に回します。詳細は [docs/02](docs/02_incident_raci_and_sla.md) を参照してください。
 
 ### ステップ 5 — 自社ルールで拡張する(任意)
 
@@ -99,6 +171,14 @@ bin/siir validate-record my-incident.json --level extended
 bin/siir check-overlay examples/overlays/sample-company/extra-clauses.yaml
 bin/siir check-dpa my-dpa.yaml --overlay examples/overlays/sample-company/extra-clauses.yaml
 ```
+
+`check-overlay` の出力例:
+
+```text
+[OK] overlay valid (add / strengthen rules satisfied)
+```
+
+overlay が `add`(追加)/ `strengthen`(厳格化)のルールを満たせば `[OK]`、違反すれば `[NG]` と理由を返します。検証を通った overlay を `--overlay` で各コマンドに適用します。
 
 ## 誰のためのものか
 

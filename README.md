@@ -92,6 +92,24 @@ from peacetime preparation to incident-time validation.
    overlay, validated by `bin/siir check-overlay <path>` and applied with
    `--overlay <path>`.
 
+Sample output (`check-responsibility`) — `[OK]` ok / `[..]` revise / `[NG]` block
+per row, then an overall verdict:
+
+```text
+Target: 共用メール基盤 (6 ISP OEM)
+Responsibility readiness: 83%
+
+[OK] RB01 利用者向け窓口・本人通知: OK (ok)
+[..] RB04 プレスリリース (共同 / 個別の決定): REVISE (accountability_deferred)
+    gray (tbd): oem_operator
+[NG] RB12 平時 / 事故時の合同演習主催: BLOCK (unassigned)
+
+Conclusion: BLOCK
+```
+
+See [`README.ja.md`](README.ja.md#使い方想定ワークフロー) for sample output of every
+command in the workflow.
+
 ## Who this is for
 
 | If you are... | Start with... |
