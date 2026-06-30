@@ -13,15 +13,16 @@ Tabletop exercise. Distilled from the **published analysis** of a shared mail
 platform incident (an OEM platform shared by six ISPs); the framework is
 extracted from public reporting, not from any internal source.
 
-You get three things from a clone:
+Key features:
 
-1. **A CLI diagnostic** — `bin/siir check-responsibility` / `check-dpa` /
-   `validate-record` / `render-runbook` / `tabletop` — deterministic, runs in
-   seconds, exit-code gated.
-2. **Machine-readable definitions** (`definitions/*.yaml`, `schemas/*.json`)
-   that AI agents can load as context and CI can call directly.
-3. **Overlay extension points** so each company can add its own roles, items,
-   clauses, obligations and scenarios **without forking the framework**.
+1. **A diagnostic, not just templates** — it mechanically checks responsibility
+   boundaries, contract (DPA) clauses and notification SLAs, and returns a
+   deterministic verdict.
+2. **A machine-readable single source of truth** — the responsibility table,
+   RACI, DPA clauses, notification obligations and scenarios are kept as
+   definitions that AI agents and CI can consume directly.
+3. **Extensible without forking** — each company adds its own roles, items,
+   clauses, obligations and scenarios through an overlay.
 
 > **Glossary**: **DPA** (Data Processing Agreement) is the contract between the
 > entrusting party (controller) and the processor governing how personal data is
