@@ -1,5 +1,7 @@
 # shared-infra-incident-readiness
 
+![OGP](docs/assets/ogp.png)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > 🇯🇵 日本語版は [README.ja.md](README.ja.md)
@@ -20,6 +22,12 @@ You get three things from a clone:
    that AI agents can load as context and CI can call directly.
 3. **Overlay extension points** so each company can add its own roles, items,
    clauses, obligations and scenarios **without forking the framework**.
+
+> **Glossary**: **DPA** (Data Processing Agreement) is the contract between the
+> entrusting party (controller) and the processor governing how personal data is
+> handled. **RACI** organises responsibility into four roles — Responsible /
+> Accountable / Consulted / Informed. **SLA** here means the deadline by which a
+> notification must be sent.
 
 > **A note on language**: Documents under `docs/` are written in Japanese (the
 > author's working language). This English README is the entry point;
@@ -56,6 +64,33 @@ Every command returns a deterministic exit code so you can gate CI on it:
 **0** ok · **1** partial (yellow: warnings, deferred items, not-yet-sent
 notifications) · **2** block (gaps, missing clauses, SLA breach, rejected
 overlay) · **3** input error (file missing / parse error).
+
+## Usage workflow
+
+The commands run against *your* data. Copy the files under `examples/` as
+templates, edit them with your own values, then run the commands in this order —
+from peacetime preparation to incident-time validation.
+
+1. **Prepare** — copy a sample to start your own input file:
+   `cp examples/responsibility/sample-oem-mail.yaml my-responsibility.yaml`
+2. **Check responsibilities (peacetime)** — fill the `matrix` with your own
+   R/A/C/I (write `tbd` for a box you have not decided yet), then
+   `bin/siir check-responsibility my-responsibility.yaml`. Fix `BLOCK` rows
+   first, then the `REVISE` gray zones.
+3. **Check the contract (peacetime)** — mark each clause `present` / `partial` /
+   `missing` in a copy of `examples/dpa/sample-dpa-answers.yaml`, then
+   `bin/siir check-dpa my-dpa.yaml`.
+4. **Prepare runbooks & drills** — generate the deterministic 3-stage runbook and
+   the Tabletop program:
+   `bin/siir render-runbook my-responsibility.yaml --scenario rce-6brand` and
+   `bin/siir tabletop --scenario rce-6brand my-responsibility.yaml`
+   (list scenario ids with `bin/siir list-definitions`).
+5. **Validate at incident time** — build a real incident record from
+   `examples/records/sample-incident.json` and check the notification timeline:
+   `bin/siir validate-record my-incident.json --level extended`.
+6. **Extend (optional)** — add your own roles / clauses / scenarios via an
+   overlay, validated by `bin/siir check-overlay <path>` and applied with
+   `--overlay <path>`.
 
 ## Who this is for
 

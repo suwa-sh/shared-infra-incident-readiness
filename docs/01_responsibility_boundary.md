@@ -2,12 +2,12 @@
 
 ## TL;DR
 
-共有インフラ(OEM / 共通基盤)で事故が起きた最初の 30 分、「これは誰の責任か」を即決するための **責任境界表 12 項目 × 4 ロール**。`siir check-responsibility` が、各組織の記入済みマトリクスを採点し、未割当 / 説明責任の分裂 / 都度協議(グレーゾーン)を出し分ける。
+共有インフラ(OEM / 共通基盤)で事故が起きた最初の 30 分に、「これは誰の責任か」を即決するための **責任境界表 12 項目 × 4 ロール**です。`siir check-responsibility` が各組織の記入済みマトリクスを採点し、未割当 / 説明責任の分裂 / 都度協議(グレーゾーン)を出し分けます。
 
 ## When to use this
 
-- 共有 SaaS / OEM 基盤を提供・受託していて、事故初動の責任分界が曖昧なまま走っている
-- 顧客提案・オンボーディングで「事故初動の備え」を可視化したい
+- 共有 SaaS / OEM 基盤を提供・受託していて、事故初動の責任分界が曖昧なまま走っているとき
+- 顧客提案・オンボーディングで「事故初動の備え」を可視化したいとき
 
 ## Quick use
 
@@ -96,11 +96,11 @@ classDiagram
   Definition "1" o-- "*" Item
 ```
 
-各 `Item` は推奨割当 `recommended`(記事のテンプレ値)を持ち、組織は answers でこれを写し取って自社用に調整する。`extension_points` が overlay で何を `add` / `strengthen` できるかを self-documenting に宣言する(→ [02](02_incident_raci_and_sla.md) の SLA 強化、overlay 規則の詳細は [README](../README.ja.md))。
+各 `Item` は推奨割当 `recommended`(記事のテンプレ値)を持ち、組織は answers でこれを写し取って自社用に調整します。`extension_points` は、overlay で何を `add` / `strengthen` できるかを self-documenting に宣言します(→ [02](02_incident_raci_and_sla.md) の SLA 強化、overlay 規則の詳細は [README](../README.ja.md))。
 
 ### 採点ロジック (ownership clarity)
 
-記事のテンプレは主担当を単一の **R** で表す行(本人通知・監査ログ等)があり、必ず別の **A** を要求すると原典と矛盾する。そこで「明確な単一オーナー」を合格条件にする:
+記事のテンプレには主担当を単一の **R** で表す行(本人通知・監査ログ等)があり、必ず別の **A** を要求すると原典と矛盾します。そこで「明確な単一オーナー」を合格条件にします。
 
 | 状態 | 判定 | exit |
 |---|---|---|
@@ -110,10 +110,10 @@ classDiagram
 | A が 2 つ以上(説明責任の分裂) | block | 2 |
 | A 無しで R が 2 つ以上(オーナー曖昧) | revise | 1 |
 
-`tbd` を罰しないのは、記事が「不明 / 都度協議の箱を残す勇気」を明示的に推奨しているため。
+`tbd` を罰しないのは、記事が「不明 / 都度協議の箱を残す勇気」を明示的に推奨しているためです。
 
 ## References
 
 - 正本: [`definitions/responsibility-matrix.yaml`](../definitions/responsibility-matrix.yaml)
 - 実装: [`src/siir/check_responsibility.py`](../src/siir/check_responsibility.py)
-- 出典: 共用メール基盤事案の分析(公開報道からの抽出。内部情報には依拠しない)
+- 出典: 共用メール基盤事案の分析(公開報道からの抽出。内部情報には依拠していません)
