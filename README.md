@@ -2,6 +2,7 @@
 
 ![OGP](docs/assets/ogp.png)
 
+[![CI](https://github.com/suwa-sh/shared-infra-incident-readiness/actions/workflows/ci.yml/badge.svg)](https://github.com/suwa-sh/shared-infra-incident-readiness/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > 🇯🇵 日本語版は [README.ja.md](README.ja.md)
