@@ -1,0 +1,14 @@
+# sample-company overlay for responsibility-matrix.
+# Demonstrates the 4->5 role expansion the article describes (add the end-user
+# column) plus a company-specific responsibility item, with NO overwrite of the
+# existing 4 roles or 12 items.
+extends: shared-infra-responsibility-matrix
+add:
+  roles:
+    - id: end_user
+      name: 利用者
+      name_en: End user
+  items:
+    - id: RB13
+      text: 利用者向け FAQ / 問い合わせ一次対応
+      recommended: { principal_isp: R, oem_operator: C, ops_bpo: R, sw_vendor: I, end_user: I }

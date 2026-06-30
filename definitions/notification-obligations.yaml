@@ -1,0 +1,86 @@
+version: 1
+name: shared-infra-notification-obligations
+description: |
+  Legal / regulatory notification obligations triggered by a shared-infrastructure
+  personal-data incident in Japan. This is the single source of truth for the
+  *statutory / regulatory* clock (PPC, MIC, data-subject). Contractual notification
+  SLAs (the 24h first-report / 72h confirmed-report between processor and controller)
+  live in dpa-clauses.yaml, NOT here, to avoid double-bookkeeping.
+
+  Each obligation carries machine-comparable SLA fields so that `siir validate-record`
+  can deterministically check an incident's notification timeline. Numeric deadlines
+  use `duration_hours`; vague statutory wording (sokuyaka / chitai-naku) is kept as
+  `duration_text` and reported as informational (no hard breach computation).
+
+extension_points:
+  - path: obligations
+    allow: add                       # 追加の通知義務 (業種別規制等)。既存義務の上書き・削除は不可
+  - path: obligations[].duration_hours
+    allow: strengthen
+    direction: lower                 # stricter = より短い時間。緩和 (延長) は不可
+
+# SLA フィールド設計:
+#   id                  安定キー
+#   deadline_anchor     起点 (awareness=認識時点 / confirmation=確認時点)
+#   duration_hours      数値の締切時間 (validate-record が機械照合する)。null なら text のみ
+#   duration_text       人間可読の締切表現 (法令文言)
+#   recipient           通知先
+#   clock_type          legal / regulatory / practice (実務推奨)
+#   legal_basis         根拠条文
+#   joint_report_allowed 委託元・委託先の連名報告が可能か (個情委 FAQ Q5-17-16)
+obligations:
+  - id: OB01
+    name: 個人情報保護委員会への速報
+    deadline_anchor: awareness
+    duration_hours: null             # 「速やか」の運用日数は個情委公式の明示なし (記事 U5: 3-5日説は二次情報・未確認)。
+    duration_text: 速やか (運用3-5日説は二次情報・未確認)
+    confidence: unconfirmed          # 数値締切を断定しない。各社の解釈は overlay の strengthen で上書きする
+    recipient: ppc
+    clock_type: practice
+    legal_basis: 個人情報保護法 第26条 / 施行規則 第8条
+    joint_report_allowed: true
+  - id: OB02
+    name: 個人情報保護委員会への確報 (原則)
+    deadline_anchor: awareness
+    duration_hours: 720              # 原則30日
+    duration_text: 原則30日
+    recipient: ppc
+    clock_type: legal
+    legal_basis: 個人情報保護法 第26条 / 施行規則 第7条3号
+    joint_report_allowed: true
+  - id: OB02b
+    name: 個人情報保護委員会への確報 (不正の目的による場合)
+    deadline_anchor: awareness
+    duration_hours: 1440             # 不正の目的による漏えい等は60日
+    duration_text: 60日 (不正の目的による場合)
+    recipient: ppc
+    clock_type: legal
+    legal_basis: 個人情報保護法 第26条 / 施行規則 第7条3号
+    joint_report_allowed: true
+  - id: OB03
+    name: 総務省への重大事故報告
+    deadline_anchor: awareness
+    duration_hours: null
+    duration_text: 遅滞なく
+    recipient: mic
+    clock_type: legal
+    legal_basis: 電気通信事業法 第28条
+    joint_report_allowed: false
+  - id: OB04
+    name: 本人への通知
+    deadline_anchor: awareness
+    duration_hours: null
+    duration_text: 速やか
+    recipient: data_subject
+    clock_type: legal
+    legal_basis: 個人情報保護法 第26条
+    joint_report_allowed: false
+  - id: OB05
+    name: 通信の秘密侵害の論点整理 (メール本文・件名漏えい時)
+    deadline_anchor: awareness
+    duration_hours: null
+    duration_text: 件数閾値とは別論点として即時検討
+    recipient: mic
+    clock_type: legal
+    legal_basis: 電気通信事業法 第4条
+    joint_report_allowed: false

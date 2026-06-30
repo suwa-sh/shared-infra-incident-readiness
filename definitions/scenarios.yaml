@@ -1,0 +1,37 @@
+version: 1
+name: shared-infra-tabletop-scenarios
+description: |
+  Machine-readable Tabletop exercise scenarios for shared-infrastructure
+  incidents. `siir tabletop --scenario <id>` renders a facilitation program from
+  these, optionally overlaying an organisation's own responsibility matrix. New
+  scenarios are added via overlay (the framework is extensible, not hard-coded).
+
+extension_points:
+  - path: scenarios
+    allow: add                       # 自社シナリオの追加。既存シナリオの上書き・削除は不可
+
+# 各 scenario:
+#   id / title / shared_component / affected_brands(想定) / trigger /
+#   injects(時系列の注入イベント) / facilitation_questions / focus_items(RB*/AC* 参照)
+scenarios:
+  - id: rce-6brand
+    title: 共有メール基盤の第三者製SW RCE → 6ブランド同時公表
+    shared_component: 共用メール基盤上の第三者製ソフトウェア (製品名・CVE 未開示想定)
+    affected_brands: 6   # ブランド数 != 基盤数 が事故初動で露呈する構図
+    trigger: 1テナントの SOC が異常検知 → 共通コンポーネント起因と判明し 6 ブランド横断に拡大
+    duration_minutes: 90
+    injects:
+      - at_minute: 0
+        event: 1ブランドの EDR が不審なプロセス実行を検知。共有基盤起因かは未確定
+      - at_minute: 15
+        event: フォレンジックで第三者製SWの脆弱性悪用と判明。残り5ブランドも同一基盤を共有
+      - at_minute: 30
+        event: 報道機関から「6社共通基盤か」と問い合わせ。24h SLA の第一報期限が接近
+      - at_minute: 60
+        event: 個情委・総務省への報告主体と連名可否を即断する必要が生じる
+    facilitation_questions:
+      - 責任境界表の項目 RB04 (プレスリリース共同/個別) を 30 分で確定できるか
+      - RB02/RB03 の規制当局報告は誰が Accountable か。連名報告 (OB01/OB02) を使うか
+      - Communication Tree の分岐 (利用者 / 報道 / 規制当局) を 3 系統で書けるか
+      - 「不明・都度協議 (tbd)」で残してある箱はどれか。その場でエスカレーションできるか
+    focus_items: [RB02, RB03, RB04, RB09, AC03, AC04, AC05, AC08]

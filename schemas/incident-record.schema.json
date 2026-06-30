@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/suwa-sh/shared-infra-incident-readiness/schemas/incident-record.schema.json",
+  "title": "shared-infra incident record",
+  "description": "Record of a shared-infrastructure incident and its notification timeline. The schema has two levels in $defs: incident_record_minimum (article-aligned baseline) and incident_record_extended (adds spokesperson, relations and forensics for joint-response governance).",
+  "$defs": {
+    "notification_entry": {
+      "type": "object",
+      "description": "One notification action on the timeline. References either a statutory obligation (OB*) or a contractual clause (DPA*) by id, plus the actual send time, so siir validate-record can compare elapsed time against the SLA.",
+      "properties": {
+        "obligation": { "type": "string", "pattern": "^OB[0-9]+$", "description": "obligation id from notification-obligations.yaml" },
+        "clause": { "type": "string", "pattern": "^DPA[0-9]+$", "description": "clause id from dpa-clauses.yaml" },
+        "stage": { "type": "string", "enum": ["first", "confirmed"], "description": "which SLA stage this notification fulfils (first report vs confirmed report); defaults to first" },
+        "recipient": { "type": "string" },
+        "sent_at": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["sent", "pending", "skipped"] }
+      },
+      "oneOf": [
+        { "required": ["obligation"], "not": { "required": ["clause"] } },
+        { "required": ["clause"], "not": { "required": ["obligation"] } }
+      ],
+      "required": ["sent_at", "status"],
+      "additionalProperties": false
+    },
+    "shared_component": {
+      "type": "object",
+      "description": "The shared component whose flaw made brand-count != platform-count visible.",
+      "properties": {
+        "name": { "type": "string" },
+        "vendor": { "type": "string" },
+        "cve": { "type": "string", "pattern": "^CVE-[0-9]{4}-[0-9]+$" }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "affected": {
+      "type": "object",
+      "properties": {
+        "brands": { "type": "array", "items": { "type": "string" }, "description": "利用者から見える窓口ブランド。基盤数 != ブランド数 を明示" },
+        "tenants": { "type": "array", "items": { "type": "string" } },
+        "estimated_records": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["brands"],
+      "additionalProperties": false
+    },
+    "incident_record_minimum": {
+      "type": "object",
+      "properties": {
+        "incident_id": { "type": "string" },
+        "title": { "type": "string" },
+        "detected_at": { "type": "string", "format": "date-time" },
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "shared_component": { "$ref": "#/$defs/shared_component" },
+        "affected": { "$ref": "#/$defs/affected" },
+        "notifications": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/notification_entry" }
+        }
+      },
+      "required": ["incident_id", "detected_at", "shared_component", "affected", "notifications"],
+      "additionalProperties": true
+    },
+    "incident_record_extended": {
+      "allOf": [
+        { "$ref": "#/$defs/incident_record_minimum" },
+        {
+          "type": "object",
+          "properties": {
+            "spokesperson": {
+              "type": "object",
+              "description": "誰がいつ何を言うか。並走する報告ラインの説明主体を固定する。",
+              "properties": {
+                "lead_role": { "type": "string" },
+                "press_mode": { "type": "string", "enum": ["joint", "individual", "undecided"] }
+              },
+              "required": ["lead_role", "press_mode"],
+              "additionalProperties": false
+            },
+            "relations": {
+              "type": "array",
+              "description": "委託元 / 運用者 / SaaS の対応関係 (多階層共有基盤の責任分担)。",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "principal": { "type": "string" },
+                  "operator": { "type": "string" },
+                  "sw_vendor": { "type": "string" }
+                },
+                "required": ["principal", "operator"],
+                "additionalProperties": false
+              }
+            },
+            "forensics": {
+              "type": "object",
+              "properties": {
+                "started_at": { "type": "string", "format": "date-time" },
+                "lead": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["spokesperson"]
+        }
+      ]
+    }
+  },
+  "$ref": "#/$defs/incident_record_minimum"
+}

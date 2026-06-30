@@ -1,0 +1,13 @@
+# DPA 条項カバレッジの記入例。DPA03 (通知SLA) が missing なので BLOCK になる。
+target: 共用メール基盤 委託契約 v1
+clauses:
+  DPA01: present
+  DPA02: present
+  DPA03: missing    # 委託先→委託元の通知SLA が未記載 → required missing → BLOCK
+  DPA04: present
+  DPA05: partial
+  DPA06: present
+  DPA07: present
+  DPA08: present
+  DPA09: partial
+  DPA10: present

@@ -1,0 +1,82 @@
+version: 1
+name: shared-infra-incident-raci
+description: |
+  Initial-response RACI for a shared-infrastructure incident: 15 activities in
+  Day 0-3 sequence x 5 roles. This is the *process flow* reference consumed by
+  `siir render-runbook` (to lay out the runbook + communication tree) and by
+  `siir list-definitions`. It does NOT embed SLA values; activities that have a
+  notification deadline reference an obligation (notification-obligations.yaml)
+  or clause (dpa-clauses.yaml) by id, so the SLA stays single-sourced. Cells use
+  one of R/A/C/I, or "R/A" when a role is both, or "-" for not applicable.
+
+extension_points:
+  - path: roles
+    allow: add                       # ロール列の追加。既存ロールの上書き・削除は不可
+  - path: activities
+    allow: add                       # アクティビティの追加。既存セルの書換え・削除は不可
+
+roles:
+  - id: end_user
+    name: 利用者
+  - id: principal_isp
+    name: 委託元ISP
+  - id: oem_operator
+    name: OEM運用者
+  - id: ops_bpo
+    name: 運用BPO
+  - id: sw_vendor
+    name: SWベンダー
+
+# 各 activity: id / text / cells / obligation_ref(任意, OB*) / clause_ref(任意, DPA*)
+activities:
+  - id: AC01
+    text: 検知 (SIEM / EDR)
+    cells: { end_user: "-", principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I }
+  - id: AC02
+    text: トリアージ (事故認定)
+    cells: { end_user: "-", principal_isp: C, oem_operator: A, ops_bpo: R, sw_vendor: C }
+  - id: AC03
+    text: 委託元への速報
+    clause_ref: DPA03
+    cells: { end_user: "-", principal_isp: R, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  - id: AC04
+    text: 個情委速報
+    obligation_ref: OB01
+    cells: { end_user: "-", principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  - id: AC05
+    text: 総務省速報
+    obligation_ref: OB03
+    cells: { end_user: "-", principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  - id: AC06
+    text: 利用者影響範囲確定
+    cells: { end_user: "-", principal_isp: C, oem_operator: "R/A", ops_bpo: C, sw_vendor: I }
+  - id: AC07
+    text: パスワードリセット決定
+    cells: { end_user: I, principal_isp: A, oem_operator: R, ops_bpo: R, sw_vendor: I }
+  - id: AC08
+    text: プレスリリース合意
+    cells: { end_user: "-", principal_isp: C, oem_operator: A, ops_bpo: I, sw_vendor: I }
+  - id: AC09
+    text: 同時公表タイミング調整
+    cells: { end_user: "-", principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  - id: AC10
+    text: 本人通知
+    obligation_ref: OB04
+    cells: { end_user: I, principal_isp: "R/A", oem_operator: C, ops_bpo: I, sw_vendor: I }
+  - id: AC11
+    text: フォレンジック開始
+    cells: { end_user: "-", principal_isp: I, oem_operator: R, ops_bpo: C, sw_vendor: C }
+  - id: AC12
+    text: パッチ適用・暫定遮断
+    clause_ref: DPA08
+    cells: { end_user: "-", principal_isp: I, oem_operator: "R/A", ops_bpo: R, sw_vendor: A }
+  - id: AC13
+    text: 個情委確報
+    obligation_ref: OB02
+    cells: { end_user: "-", principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  - id: AC14
+    text: 再発防止策の策定
+    cells: { end_user: "-", principal_isp: C, oem_operator: "R/A", ops_bpo: C, sw_vendor: C }
+  - id: AC15
+    text: 事後ふりかえり (Tabletop含む)
+    cells: { end_user: "-", principal_isp: A, oem_operator: A, ops_bpo: C, sw_vendor: C }

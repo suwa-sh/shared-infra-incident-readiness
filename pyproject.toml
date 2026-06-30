@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shared-infra-incident-readiness"
+version = "0.1.0"
+description = "Diagnostic tool and extensible framework for the first 30 minutes of a shared-infrastructure incident: responsibility boundaries, DPA clauses, notification SLA, and Tabletop exercises."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Shinichi Suwa" }]
+keywords = [
+    "incident-response",
+    "raci",
+    "dpa",
+    "compliance",
+    "shared-infrastructure",
+    "governance",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Legal Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+dependencies = [
+    "PyYAML>=6.0,<7.0",
+    "jsonschema[format-nongpl]>=4.21,<5.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0,<9.0"]
+
+[project.scripts]
+siir = "siir.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/suwa-sh/shared-infra-incident-readiness"
+Issues = "https://github.com/suwa-sh/shared-infra-incident-readiness/issues"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

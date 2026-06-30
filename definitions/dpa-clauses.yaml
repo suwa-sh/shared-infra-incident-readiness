@@ -1,0 +1,63 @@
+version: 1
+name: shared-infra-dpa-clauses
+description: |
+  10 mandatory clauses for a Data Processing Agreement / outsourcing contract
+  that governs a shared infrastructure. Synthesised from GDPR Art.28(3)(a)-(h)
+  and the Japanese PPC guideline. This file is the single source of truth for
+  the *contractual* notification SLA (24h first report / 72h confirmed report
+  between processor and controller); statutory clocks live in
+  notification-obligations.yaml.
+
+extension_points:
+  - path: clauses
+    allow: add                       # 自社固有の追加条項。既存条項の上書き・削除は不可
+  - path: clauses[].sla_hours
+    allow: strengthen
+    direction: lower                 # stricter = より短い通知時間。緩和は不可
+
+# clause フィールド:
+#   id / title / requirement(要点) / required(必須か) / sla_hours(契約SLA, 任意)
+clauses:
+  - id: DPA01
+    title: 処理内容の特定
+    requirement: 目的・種別・カテゴリ・期間を特定する
+    required: true
+  - id: DPA02
+    title: 再委託の事前承認
+    requirement: 再委託先一覧を維持し、事前承認を要する
+    required: true
+  - id: DPA03
+    title: 委託先→委託元 漏えい通知SLA
+    requirement: 24h以内に第一報、72h以内に確報。法令上の必須ではなく実務推奨 (GDPR Art.33(2)は processor→controller を without undue delay とのみ規定)
+    required: true
+    sla_hours: 24                    # 第一報。確報は sla_confirmed_hours
+    sla_confirmed_hours: 72
+  - id: DPA04
+    title: 本人通知の主体明示
+    requirement: 委託元 / 委託先のどちらが本人通知を行うかを明示する
+    required: true
+  - id: DPA05
+    title: 規制当局通知の主体明示
+    requirement: 個情委・総務省への通知主体を明示する
+    required: true
+  - id: DPA06
+    title: 監査ログの保持期間と提供義務
+    requirement: 委託元の要請時に N営業日以内に提供する。保持期間を定める
+    required: true
+  - id: DPA07
+    title: アクセス鍵・パスワードハッシュ管理責任
+    requirement: ハッシュアルゴリズムを指定し、鍵ローテーションSLAを定める
+    required: true
+  - id: DPA08
+    title: 第三者ソフトウェアのパッチ管理
+    requirement: Critical公表後72h以内に暫定対応着手、N日以内に正規パッチ
+    required: true
+    sla_hours: 72                    # Critical CVE 公表後の暫定対応着手期限
+  - id: DPA09
+    title: インシデント時の合同対応条項
+    requirement: フォレンジック・広報・法務の役割分担を定める
+    required: true
+  - id: DPA10
+    title: 演習義務
+    requirement: 年1回以上の Tabletop / Red Team を契約に明記する
+    required: true

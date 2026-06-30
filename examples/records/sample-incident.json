@@ -1,0 +1,52 @@
+{
+  "incident_id": "INC-2026-0623",
+  "title": "共用メール基盤 第三者製SW 脆弱性による不正アクセス",
+  "detected_at": "2026-06-23T09:00:00+09:00",
+  "confirmed_at": "2026-06-23T15:00:00+09:00",
+  "shared_component": {
+    "name": "共用メール基盤上の第三者製ソフトウェア",
+    "vendor": "未開示"
+  },
+  "affected": {
+    "brands": ["BIGLOBE", "@nifty", "J:COM NET", "コミュファ光", "ピカラ", "CPI"],
+    "estimated_records": 14220000
+  },
+  "spokesperson": {
+    "lead_role": "oem_operator",
+    "press_mode": "joint"
+  },
+  "notifications": [
+    {
+      "clause": "DPA03",
+      "stage": "first",
+      "recipient": "principal_isp",
+      "sent_at": "2026-06-23T20:00:00+09:00",
+      "status": "sent"
+    },
+    {
+      "clause": "DPA03",
+      "stage": "confirmed",
+      "recipient": "principal_isp",
+      "sent_at": "2026-06-27T15:00:00+09:00",
+      "status": "sent"
+    },
+    {
+      "obligation": "OB01",
+      "recipient": "ppc",
+      "sent_at": "2026-06-26T09:00:00+09:00",
+      "status": "sent"
+    },
+    {
+      "obligation": "OB03",
+      "recipient": "mic",
+      "sent_at": "2026-06-24T10:00:00+09:00",
+      "status": "sent"
+    },
+    {
+      "obligation": "OB04",
+      "recipient": "data_subject",
+      "sent_at": "2026-06-25T09:00:00+09:00",
+      "status": "pending"
+    }
+  ]
+}

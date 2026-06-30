@@ -1,0 +1,16 @@
+# sample-company overlay for dpa-clauses.
+# Demonstrates BOTH allowed operations without forking the framework:
+#   - add:        a company-specific clause (DPA11)
+#   - strengthen: tighten the breach-notification SLA from 24h to 12h
+#                 (direction: lower => stricter; weakening would be rejected)
+extends: shared-infra-dpa-clauses
+add:
+  clauses:
+    - id: DPA11
+      title: 暗号鍵の地理的分離
+      requirement: 鍵管理を本番データと別リージョン / 別管理主体に分離する
+      required: true
+strengthen:
+  clauses:
+    DPA03:
+      sla_hours: 12

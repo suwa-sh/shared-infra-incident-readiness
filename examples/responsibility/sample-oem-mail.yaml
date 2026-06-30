@@ -1,0 +1,17 @@
+# 共用メール基盤事案をなぞった記入例 (KDDI 構図)。
+# わざと RB04 を「都度協議 (tbd)」、RB12 を未割当のまま残し、
+# check-responsibility が gray (yellow) と block を正しく出し分けることを示す。
+target: 共用メール基盤 (6 ISP OEM)
+matrix:
+  RB01: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }
+  RB02: { principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  RB03: { principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  RB04: { principal_isp: C, oem_operator: tbd, ops_bpo: I, sw_vendor: I }   # 共同/個別の決定主体が未確定 → gray
+  RB05: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I }
+  RB06: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I }
+  RB07: { principal_isp: I, oem_operator: R, ops_bpo: C, sw_vendor: A }
+  RB08: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C }
+  RB09: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I }
+  RB10: { principal_isp: R, oem_operator: C, ops_bpo: C, sw_vendor: I }
+  RB11: { principal_isp: A, oem_operator: R, ops_bpo: C, sw_vendor: I }
+  RB12: {}   # 合同演習の主催者が未割当 → block (accountability gap)
