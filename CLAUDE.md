@@ -4,7 +4,7 @@
 
 **shared-infra-incident-readiness** — 共有インフラ事故初動(最初の 30 分)を救う**診断ツール + 拡張可能フレームワーク**。責任境界表・初動 RACI・DPA 条項・通知 SLA・Tabletop 演習を機械可読定義として持ち、CLI で診断・生成する。MIT の OSS。
 
-出典は共用メール基盤事案(6 ISP の OEM 共有基盤)の**公開報道からの抽出**であり、事案当事者の内部情報には依拠しない。
+出典は共用メール基盤事案(6 ISP の OEM 共有基盤)の**公開報道からの抽出**です。
 
 - **機械可読の正本**(`definitions/` の YAML / `schemas/` の JSON Schema)
 - **診断ツール**(`bin/siir` + `src/siir/`)

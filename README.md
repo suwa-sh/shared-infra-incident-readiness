@@ -10,8 +10,7 @@ A diagnostic tool and extensible framework for **the first 30 minutes of a
 shared-infrastructure incident**: who is accountable, which DPA clauses are
 missing, whether the notification timeline meets its SLA, and how to run the
 Tabletop exercise. Distilled from the **published analysis** of a shared mail
-platform incident (an OEM platform shared by six ISPs); the framework is
-extracted from public reporting, not from any internal source.
+platform incident (an OEM platform shared by six ISPs).
 
 Key features:
 

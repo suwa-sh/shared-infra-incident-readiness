@@ -4,9 +4,8 @@ description: |
   Responsibility boundary table for shared-infrastructure incident initial
   response. 12 responsibility items x 4 base roles, one R/A/C/I letter per cell.
   Distilled from the published analysis of the KDDI shared-mail-platform
-  incident (disclosed 2026-06-23); extracted from public reporting, not from
-  any internal source. Each item carries a `recommended` assignment that an
-  organisation can copy into its own answers file and then adapt.
+  incident (disclosed 2026-06-23). Each item carries a `recommended` assignment
+  that an organisation can copy into its own answers file and then adapt.
 
 # 拡張ポイント宣言: overlay で何ができるかを self-documenting にする。
 # overlay エンジン (src/siir/overlay.py) のマージ分岐はこの宣言と手動同期する。

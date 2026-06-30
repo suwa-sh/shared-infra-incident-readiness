@@ -116,4 +116,4 @@ classDiagram
 
 - 正本: [`definitions/responsibility-matrix.yaml`](../definitions/responsibility-matrix.yaml)
 - 実装: [`src/siir/check_responsibility.py`](../src/siir/check_responsibility.py)
-- 出典: 共用メール基盤事案の分析(公開報道からの抽出。内部情報には依拠していません)
+- 出典: 共用メール基盤事案の分析(公開報道からの抽出)
