@@ -15,7 +15,7 @@ extracted from public reporting, not from any internal source.
 
 Key features:
 
-1. **A diagnostic, not just templates** — it mechanically checks responsibility
+1. **Diagnoses your incident readiness** — it mechanically checks responsibility
    boundaries, contract (DPA) clauses and notification SLAs, and returns a
    deterministic verdict.
 2. **A machine-readable single source of truth** — the responsibility table,
