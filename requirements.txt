@@ -1,4 +1,4 @@
-PyYAML>=6.0,<7.0
-# [format-nongpl] extra brings rfc3339-validator so "format": "date-time"
-# actually validates the incident notification timestamps (otherwise no-op).
-jsonschema[format-nongpl]>=4.21,<5.0
+# Dependencies are declared in pyproject.toml (the single source of truth).
+# Installing this file installs the package together with all declared
+# dependencies (including the pinned overlay-scoring-skeleton engine).
+.

@@ -25,3 +25,12 @@ updates:
     commit-message:
       prefix: ci
       include: scope
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci
+      include: scope

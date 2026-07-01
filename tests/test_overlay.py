@@ -1,7 +1,7 @@
 """Tests for the canonical overlay engine (flat items, add / strengthen)."""
 
 from siir import definitions as defn_mod
-from siir import overlay as ov
+import overlay_scoring as ov
 
 
 def _base(name):

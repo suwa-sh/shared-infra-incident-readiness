@@ -20,7 +20,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
+import overlay_scoring
 import yaml
 
 from . import (
@@ -32,6 +34,19 @@ from . import (
     tabletop as _tabletop,
     validate_record as _record,
 )
+
+
+def _version_string() -> str:
+    """`siir --version` reports the app version and the overlay engine version.
+
+    The engine version is the primary way to see which overlay-scoring-skeleton
+    release this build depends on (requirement: engine version visibility).
+    """
+    try:
+        app = _pkg_version("shared-infra-incident-readiness")
+    except PackageNotFoundError:  # running from a source checkout
+        app = "0.0.0.dev0"
+    return f"siir {app} (overlay-scoring-skeleton {overlay_scoring.__version__})"
 
 
 def _add_common(parser: argparse.ArgumentParser, *, overlay: bool = True) -> None:
@@ -144,6 +159,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Tabletop exercises."
         ),
     )
+    parser.add_argument("--version", action="version", version=_version_string())
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("check-responsibility", help="Score a filled responsibility-boundary matrix")

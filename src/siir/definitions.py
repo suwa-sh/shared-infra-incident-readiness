@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import overlay as overlay_mod
+import overlay_scoring as overlay_mod
 
 DEFINITIONS_DIR = Path(__file__).resolve().parents[2] / "definitions"
 SCHEMAS_DIR = Path(__file__).resolve().parents[2] / "schemas"

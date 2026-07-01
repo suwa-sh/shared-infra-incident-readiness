@@ -26,7 +26,7 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 from . import definitions as defn_mod
-from . import overlay as overlay_mod
+import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
 DEFAULT_SCHEMA = defn_mod.SCHEMAS_DIR / "incident-record.schema.json"

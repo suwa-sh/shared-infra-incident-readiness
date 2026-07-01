@@ -15,7 +15,7 @@ from pathlib import Path
 
 from . import check_responsibility as cr
 from . import definitions as defn_mod
-from . import overlay as overlay_mod
+import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
 
