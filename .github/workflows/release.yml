@@ -35,9 +35,11 @@ jobs:
           ENGINE_VER=$(sed -n 's/.*overlay-scoring-skeleton==\([0-9][0-9.]*\).*/\1/p' pyproject.toml)
           echo "engine version: ${ENGINE_VER:-unknown}"
           IMAGE=$(printf '%s/%s' "$REGISTRY" "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+          APP_VERSION="${TAG#v}"
           echo "$GH_TOKEN" | docker login "$REGISTRY" -u "$ACTOR" --password-stdin
           docker build \
             --build-arg "OVERLAY_ENGINE_VERSION=${ENGINE_VER:-unknown}" \
+            --build-arg "APP_VERSION=${APP_VERSION}" \
             -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
           docker push "$IMAGE:$TAG"
           docker push "$IMAGE:latest"

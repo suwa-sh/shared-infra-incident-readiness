@@ -4,12 +4,16 @@ FROM python:3.12-slim
 # pyproject). Recorded as an OCI label; the authoritative record is the baked-in
 # pip freeze and `siir --version`. Defaults to "unknown" for manual builds.
 ARG OVERLAY_ENGINE_VERSION=unknown
+# App version, passed by the release workflow (derived from the git tag) so the
+# label never drifts from the released version. Defaults to "unknown" for
+# manual builds.
+ARG APP_VERSION=unknown
 
 LABEL org.opencontainers.image.title="shared-infra-incident-readiness" \
       org.opencontainers.image.description="Diagnose whether a shared infrastructure is ready for the first 30 minutes of an incident." \
       org.opencontainers.image.source="https://github.com/suwa-sh/shared-infra-incident-readiness" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="0.2.0" \
+      org.opencontainers.image.version="${APP_VERSION}" \
       sh.suwa.overlay-engine.version="${OVERLAY_ENGINE_VERSION}"
 
 WORKDIR /app

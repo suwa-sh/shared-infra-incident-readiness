@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 # siir: shared-infra-incident-readiness CLI entry point.
 #
-# Resolves the repository root from this script's location and runs the Python
-# CLI module, so `bin/siir <subcommand>` works from anywhere without installing.
+# Runs the Python CLI from source (src/ on PYTHONPATH). The package's runtime
+# dependencies — including the separately distributed overlay-scoring-skeleton
+# engine — must be installed into the interpreter first, e.g.
+#   python3 -m venv .venv && .venv/bin/pip install -e .
+# (the engine used to be vendored under src/, so no install was needed; it is
+# now a real dependency). After that, `bin/siir <subcommand>` runs the CLI from
+# source without reinstalling on every edit. `pip install -e .` also gives you a
+# plain `siir` entry point if you prefer.
 
 set -euo pipefail
 
@@ -24,4 +30,11 @@ if [ -z "$PYTHON_BIN" ]; then
 fi
 
 export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+
+if ! "$PYTHON_BIN" -c "import overlay_scoring" >/dev/null 2>&1; then
+    echo "[siir] missing dependency 'overlay_scoring' in $PYTHON_BIN." >&2
+    echo "[siir] install it first, e.g.: $REPO_ROOT/.venv from 'pip install -e .'" >&2
+    exit 127
+fi
+
 exec "$PYTHON_BIN" -m siir.cli "$@"
