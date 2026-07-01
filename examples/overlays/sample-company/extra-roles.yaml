@@ -4,11 +4,9 @@
 # existing 4 roles or 12 items.
 extends: shared-infra-responsibility-matrix
 add:
-  roles:
-    - id: end_user
-      name: 利用者
-      name_en: End user
-  items:
-    - id: RB13
-      text: 利用者向け FAQ / 問い合わせ一次対応
-      recommended: { principal_isp: R, oem_operator: C, ops_bpo: R, sw_vendor: I, end_user: I }
+  - id: roles.end_user
+    name: 利用者
+    name_en: End user
+  - id: resp.RB13
+    text: 利用者向け FAQ / 問い合わせ一次対応
+    recommended: { principal_isp: R, oem_operator: C, ops_bpo: R, sw_vendor: I, end_user: I }

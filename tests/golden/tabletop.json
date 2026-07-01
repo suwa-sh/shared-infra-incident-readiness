@@ -1,0 +1,81 @@
+{
+  "scenario": "rce-6brand",
+  "title": "共有メール基盤の第三者製SW RCE → 6ブランド同時公表",
+  "target": "共用メール基盤 (6 ISP OEM)",
+  "injects": [
+    {
+      "at_minute": 0,
+      "event": "1ブランドの EDR が不審なプロセス実行を検知。共有基盤起因かは未確定"
+    },
+    {
+      "at_minute": 15,
+      "event": "フォレンジックで第三者製SWの脆弱性悪用と判明。残り5ブランドも同一基盤を共有"
+    },
+    {
+      "at_minute": 30,
+      "event": "報道機関から「6社共通基盤か」と問い合わせ。24h SLA の第一報期限が接近"
+    },
+    {
+      "at_minute": 60,
+      "event": "個情委・総務省への報告主体と連名可否を即断する必要が生じる"
+    }
+  ],
+  "facilitation_questions": [
+    "責任境界表の項目 RB04 (プレスリリース共同/個別) を 30 分で確定できるか",
+    "RB02/RB03 の規制当局報告は誰が Accountable か。連名報告 (OB01/OB02) を使うか",
+    "Communication Tree の分岐 (利用者 / 報道 / 規制当局) を 3 系統で書けるか",
+    "「不明・都度協議 (tbd)」で残してある箱はどれか。その場でエスカレーションできるか"
+  ],
+  "focus": [
+    {
+      "ref": "RB02",
+      "text": "個情委への速報・確報",
+      "owner": "委託元ISP",
+      "gray": [],
+      "source": "org"
+    },
+    {
+      "ref": "RB03",
+      "text": "総務省への重大事故報告",
+      "owner": "委託元ISP",
+      "gray": [],
+      "source": "org"
+    },
+    {
+      "ref": "RB04",
+      "text": "プレスリリース (共同 / 個別の決定)",
+      "owner": "(未割当 — 演習で確定する)",
+      "gray": [
+        "OEM基盤運用者"
+      ],
+      "source": "org"
+    },
+    {
+      "ref": "RB09",
+      "text": "影響範囲確定 (件数・テナント特定)",
+      "owner": "(未割当 — 演習で確定する)",
+      "gray": [],
+      "source": "org"
+    },
+    {
+      "ref": "AC03",
+      "text": "",
+      "owner": null
+    },
+    {
+      "ref": "AC04",
+      "text": "",
+      "owner": null
+    },
+    {
+      "ref": "AC05",
+      "text": "",
+      "owner": null
+    },
+    {
+      "ref": "AC08",
+      "text": "",
+      "owner": null
+    }
+  ]
+}

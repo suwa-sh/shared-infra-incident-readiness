@@ -32,14 +32,24 @@ def build(
     answers_path: str | Path | None = None,
     overlay_paths: list[str | Path] | None = None,
 ) -> TabletopModel:
-    scenarios = {s["id"]: s for s in defn_mod.load("scenarios", overlay_paths=overlay_paths).get("scenarios", [])}
+    sc_defn = defn_mod.load("scenarios", overlay_paths=overlay_paths)
+    sc_sep = overlay_mod.separator_of(sc_defn)
+    scenarios = {
+        defn_mod.local_id(s["id"], sc_sep): dict(s, id=defn_mod.local_id(s["id"], sc_sep))
+        for s in overlay_mod.group_items(sc_defn).get("scenarios", {}).get("leaves", [])
+    }
     if scenario_id not in scenarios:
         raise KeyError(f"unknown scenario '{scenario_id}'")
     scenario = scenarios[scenario_id]
 
     resp = defn_mod.load("responsibility-matrix", overlay_paths=overlay_paths)
-    item_by_id = {i["id"]: i for i in resp["items"]}
-    role_names = {r["id"]: r.get("name", r["id"]) for r in resp.get("roles", [])}
+    resp_sep = overlay_mod.separator_of(resp)
+    resp_groups = overlay_mod.group_items(resp)
+    item_by_id = {defn_mod.local_id(i["id"], resp_sep): i for i in resp_groups.get("resp", {}).get("leaves", [])}
+    role_names = {
+        defn_mod.local_id(r["id"], resp_sep): r.get("name", defn_mod.local_id(r["id"], resp_sep))
+        for r in resp_groups.get("roles", {}).get("leaves", [])
+    }
 
     org_matrix = {}
     target = None

@@ -1,5 +1,6 @@
 version: 1
 name: shared-infra-tabletop-scenarios
+separator: "."
 description: |
   Machine-readable Tabletop exercise scenarios for shared-infrastructure
   incidents. `siir tabletop --scenario <id>` renders a facilitation program from
@@ -7,14 +8,14 @@ description: |
   scenarios are added via overlay (the framework is extensible, not hard-coded).
 
 extension_points:
-  - path: scenarios
-    allow: add                       # 自社シナリオの追加。既存シナリオの上書き・削除は不可
+  - {group: "scenarios", allow: add}   # 自社シナリオの追加。既存シナリオの上書き・削除は不可
 
-# 各 scenario:
-#   id / title / shared_component / affected_brands(想定) / trigger /
-#   injects(時系列の注入イベント) / facilitation_questions / focus_items(RB*/AC* 参照)
-scenarios:
-  - id: rce-6brand
+items:
+  - {id: "scenarios", label: Tabletop scenarios}   # group ヘッダ
+  # 各 scenario:
+  #   id / title / shared_component / affected_brands(想定) / trigger /
+  #   injects(時系列の注入イベント) / facilitation_questions / focus_items(RB*/AC* 参照)
+  - id: "scenarios.rce-6brand"
     title: 共有メール基盤の第三者製SW RCE → 6ブランド同時公表
     shared_component: 共用メール基盤上の第三者製ソフトウェア (製品名・CVE 未開示想定)
     affected_brands: 6   # ブランド数 != 基盤数 が事故初動で露呈する構図

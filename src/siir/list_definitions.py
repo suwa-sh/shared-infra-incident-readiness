@@ -16,34 +16,37 @@ from . import overlay as overlay_mod
 
 OverlayError = defn_mod.OverlayError
 
-# definition name -> (array key holding the primary items)
-_PRIMARY_ARRAY = {
-    "responsibility-matrix": "items",
-    "incident-raci": "activities",
-    "dpa-clauses": "clauses",
-    "notification-obligations": "obligations",
-    "scenarios": "scenarios",
+# definition name -> (primary group holding the countable items, roles group or None)
+_PRIMARY_GROUP = {
+    "responsibility-matrix": ("resp", "roles"),
+    "incident-raci": ("raci_act", "raci_roles"),
+    "dpa-clauses": ("clauses", None),
+    "notification-obligations": ("obligations", None),
+    "scenarios": ("scenarios", None),
 }
 
 
 def summarize(overlay_paths: list[str | Path] | None = None) -> list[dict]:
     summaries = []
-    for name, array_key in _PRIMARY_ARRAY.items():
+    for name, (group_key, role_group_key) in _PRIMARY_GROUP.items():
         # overlays only apply to the base they `extends`; skip mismatches silently.
         try:
             defn = defn_mod.load(name, overlay_paths=overlay_paths)
         except OverlayError:
             defn = defn_mod.load(name)  # show base on mismatch
-        items = defn.get(array_key, [])
+        sep = overlay_mod.separator_of(defn)
+        groups = overlay_mod.group_items(defn)
+        leaves = groups.get(group_key, {}).get("leaves", [])
+        roles = groups.get(role_group_key, {}).get("leaves", []) if role_group_key else []
         summaries.append(
             {
                 "name": defn.get("name", name),
                 "version": defn.get("version"),
-                "array": array_key,
-                "count": len(items),
-                "ids": [i.get("id") for i in items],
-                "roles": [r.get("id") for r in defn.get("roles", [])] if defn.get("roles") else [],
-                "extension_points": [ep.get("path") for ep in defn.get("extension_points", [])],
+                "array": group_key,
+                "count": len(leaves),
+                "ids": [defn_mod.local_id(i["id"], sep) for i in leaves],
+                "roles": [defn_mod.local_id(r["id"], sep) for r in roles],
+                "extension_points": defn.get("extension_points", []),
             }
         )
     return summaries
@@ -73,6 +76,13 @@ def check_overlay(overlay_path: str | Path) -> overlay_mod.MergeResult:
     return overlay_mod.apply_overlay(base, ov)
 
 
+def _fmt_ep(ep: dict) -> str:
+    grp = ep.get("group", "*")
+    if ep.get("allow") == "strengthen":
+        return f"{grp}.{ep.get('field')}:strengthen({ep.get('direction')})"
+    return f"{grp}:{ep.get('allow')}"
+
+
 def render_text(summaries: list[dict]) -> str:
     lines = []
     for s in summaries:
@@ -81,7 +91,7 @@ def render_text(summaries: list[dict]) -> str:
         if s["roles"]:
             lines.append(f"  roles: {', '.join(s['roles'])}")
         if s["extension_points"]:
-            lines.append(f"  extension_points: {', '.join(s['extension_points'])}")
+            lines.append(f"  extension_points: {', '.join(_fmt_ep(ep) for ep in s['extension_points'])}")
         lines.append("")
     return "\n".join(lines).rstrip()
 

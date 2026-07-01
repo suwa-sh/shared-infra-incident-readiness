@@ -5,12 +5,10 @@
 #                 (direction: lower => stricter; weakening would be rejected)
 extends: shared-infra-dpa-clauses
 add:
-  clauses:
-    - id: DPA11
-      title: 暗号鍵の地理的分離
-      requirement: 鍵管理を本番データと別リージョン / 別管理主体に分離する
-      required: true
+  - id: clauses.DPA11
+    title: 暗号鍵の地理的分離
+    requirement: 鍵管理を本番データと別リージョン / 別管理主体に分離する
+    required: true
 strengthen:
-  clauses:
-    DPA03:
-      sla_hours: 12
+  clauses.DPA03:
+    sla_hours: 12

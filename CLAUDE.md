@@ -25,12 +25,16 @@
 
 **SLA を二重に書かない**: 通知 SLA の値は契約系=`dpa-clauses.yaml`、法令系=`notification-obligations.yaml` のどちらか一方だけに置く。`incident-raci.yaml` は `obligation_ref` / `clause_ref` で **ID 参照するだけ**で値を持たない。
 
+## 定義モデル(flat items + group selector)
+
+`definitions/*.yaml` は単一フラット `items` リスト。id は `<group>`(group ヘッダ、ドット無し)か `<group>.<leaf>`(leaf、ドット 1 個。`separator: "."`)のどちらかで、ネストは 1 階層固定。例: `clauses` ヘッダ + `clauses.DPA01` leaf、`resp` ヘッダ + `resp.RB01` leaf。group ヘッダは group レベルの数値を、leaf は明細(宣言済み数値 + 任意の opaque payload = `cells` / `recommended` / `injects` 等)を持つ。答え(answers)・overlay・相互参照(`obligation_ref` / `clause_ref` / `focus_items`)は group prefix を持たない短い id(`RB01` / `DPA03` 等)で書く — consumer 側 (`src/siir/*.py`) が `overlay.group_items(defn)` + `definitions.local_id(id, sep)` で prefix を剥がして answers と突き合わせる。
+
 ## オーバーレイのマージ規則(一貫性の保護)
 
 各社のオーバーレイで可能なのは以下の 2 操作のみ:
 
-- **`add`**: 配列要素(roles / items / clauses / obligations / scenarios / activities)の追加。**既存要素の上書き・削除・RACI セルの書換えは不可**
-- **`strengthen`**: 数値フィールドの **強化方向のみ**。方向は各定義の `extension_points` に `direction`(SLA は `lower`=短縮)で宣言。緩和は不可
+- **`add`**: `{id: "<group>.<leaf>", ...}` の形で新しい item を追加。**既存 item の上書き・削除・RACI セルの書換えは不可**
+- **`strengthen`**: `{"<group>.<leaf または group>": {field: val}}` で数値フィールドを **強化方向のみ**変更。方向は各定義の `extension_points` に `direction`(SLA は `lower`=短縮)で宣言。緩和は不可
 
 違反は `bin/siir check-overlay <path>` で即検出(exit 2)。**変更を加えるときは必ず `check-overlay` を回す**。
 
@@ -38,9 +42,9 @@
 
 ### `extension_points` 宣言と実装の同期義務
 
-`definitions/*.yaml` の `extension_points` ブロックは読み手と AI エージェント向けの self-documenting 宣言であり、overlay エンジン(`src/siir/overlay.py`)のマージロジックは**この宣言を実行時に読んで** add 可能パス / strengthen 可能フィールド + 方向を導出する。
+`definitions/*.yaml` の `extension_points` は `{group: <selector>, allow: add}` または `{group: <selector>, level: leaf|group, field: <f>, allow: strengthen, direction: lower|higher}` の構造化宣言(`group` は完全一致 / 前方一致 `"L*"` / `"*"`。キー名は `level` — `on` は YAML 1.1 の boolean キーワードなので使わない)。読み手と AI エージェント向けの self-documenting 宣言であり、overlay エンジン(`src/siir/overlay.py`)のマージロジックは**この宣言を実行時に読んで** add 可能な group / strengthen 可能な group+field+方向を導出する。
 
-**これがあるため**: `extension_points` を追加・変更したら、`overlay.py` がそのパス種別(top-level array の add / `array[].field` の strengthen)を解釈できることを確認し、回帰テスト(`tests/test_overlay.py`)で add/collision/strengthen/weaken-reject を検証する。
+**これがあるため**: `extension_points` を追加・変更したら、`overlay.py` がその宣言(`group` selector の add / `level`+`field` の strengthen)を解釈できることを確認し、回帰テスト(`tests/test_overlay.py`)で add/collision/strengthen/weaken-reject を検証する。
 
 ## doc の段階的開示テンプレ
 

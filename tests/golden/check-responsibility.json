@@ -1,0 +1,117 @@
+{
+  "target": "共用メール基盤 (6 ISP OEM)",
+  "conclusion": "BLOCK",
+  "score": 0.8333333333333334,
+  "items": [
+    {
+      "id": "RB01",
+      "text": "利用者向け窓口・本人通知",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 0,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB02",
+      "text": "個情委への速報・確報",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 1,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB03",
+      "text": "総務省への重大事故報告",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 1,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB04",
+      "text": "プレスリリース (共同 / 個別の決定)",
+      "verdict": "revise",
+      "reason": "accountability_deferred",
+      "count_a": 0,
+      "has_r": false,
+      "gray_roles": [
+        "oem_operator"
+      ]
+    },
+    {
+      "id": "RB05",
+      "text": "監査ログの取得・保持・提供",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 0,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB06",
+      "text": "アクセス鍵・パスワードハッシュの管理",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 0,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB07",
+      "text": "第三者製ソフトウェアの脆弱性管理",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 1,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB08",
+      "text": "フォレンジック調査",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 0,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB09",
+      "text": "影響範囲確定 (件数・テナント特定)",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 0,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB10",
+      "text": "パスワードリセット・強制ログアウト",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 0,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB11",
+      "text": "代替手段の提供 (臨時メール経路等)",
+      "verdict": "ok",
+      "reason": "ok",
+      "count_a": 1,
+      "has_r": true,
+      "gray_roles": []
+    },
+    {
+      "id": "RB12",
+      "text": "平時 / 事故時の合同演習主催",
+      "verdict": "block",
+      "reason": "unassigned",
+      "count_a": 0,
+      "has_r": false,
+      "gray_roles": []
+    }
+  ]
+}

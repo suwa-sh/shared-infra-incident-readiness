@@ -1,5 +1,6 @@
 version: 1
 name: shared-infra-notification-obligations
+separator: "."
 description: |
   Legal / regulatory notification obligations triggered by a shared-infrastructure
   personal-data incident in Japan. This is the single source of truth for the
@@ -13,11 +14,8 @@ description: |
   `duration_text` and reported as informational (no hard breach computation).
 
 extension_points:
-  - path: obligations
-    allow: add                       # 追加の通知義務 (業種別規制等)。既存義務の上書き・削除は不可
-  - path: obligations[].duration_hours
-    allow: strengthen
-    direction: lower                 # stricter = より短い時間。緩和 (延長) は不可
+  - {group: "obligations", allow: add}                                                            # 追加の通知義務 (業種別規制等)。既存義務の上書き・削除は不可
+  - {group: "obligations", level: leaf, field: duration_hours, allow: strengthen, direction: lower}  # stricter = より短い時間。緩和 (延長) は不可
 
 # SLA フィールド設計:
 #   id                  安定キー
@@ -28,8 +26,9 @@ extension_points:
 #   clock_type          legal / regulatory / practice (実務推奨)
 #   legal_basis         根拠条文
 #   joint_report_allowed 委託元・委託先の連名報告が可能か (個情委 FAQ Q5-17-16)
-obligations:
-  - id: OB01
+items:
+  - {id: "obligations", label: Notification obligations}   # group ヘッダ
+  - id: "obligations.OB01"
     name: 個人情報保護委員会への速報
     deadline_anchor: awareness
     duration_hours: null             # 「速やか」の運用日数は個情委公式の明示なし (記事 U5: 3-5日説は二次情報・未確認)。
@@ -39,7 +38,7 @@ obligations:
     clock_type: practice
     legal_basis: 個人情報保護法 第26条 / 施行規則 第8条
     joint_report_allowed: true
-  - id: OB02
+  - id: "obligations.OB02"
     name: 個人情報保護委員会への確報 (原則)
     deadline_anchor: awareness
     duration_hours: 720              # 原則30日
@@ -48,7 +47,7 @@ obligations:
     clock_type: legal
     legal_basis: 個人情報保護法 第26条 / 施行規則 第7条3号
     joint_report_allowed: true
-  - id: OB02b
+  - id: "obligations.OB02b"
     name: 個人情報保護委員会への確報 (不正の目的による場合)
     deadline_anchor: awareness
     duration_hours: 1440             # 不正の目的による漏えい等は60日
@@ -57,7 +56,7 @@ obligations:
     clock_type: legal
     legal_basis: 個人情報保護法 第26条 / 施行規則 第7条3号
     joint_report_allowed: true
-  - id: OB03
+  - id: "obligations.OB03"
     name: 総務省への重大事故報告
     deadline_anchor: awareness
     duration_hours: null
@@ -66,7 +65,7 @@ obligations:
     clock_type: legal
     legal_basis: 電気通信事業法 第28条
     joint_report_allowed: false
-  - id: OB04
+  - id: "obligations.OB04"
     name: 本人への通知
     deadline_anchor: awareness
     duration_hours: null
@@ -75,7 +74,7 @@ obligations:
     clock_type: legal
     legal_basis: 個人情報保護法 第26条
     joint_report_allowed: false
-  - id: OB05
+  - id: "obligations.OB05"
     name: 通信の秘密侵害の論点整理 (メール本文・件名漏えい時)
     deadline_anchor: awareness
     duration_hours: null

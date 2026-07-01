@@ -26,6 +26,7 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 from . import definitions as defn_mod
+from . import overlay as overlay_mod
 
 OverlayError = defn_mod.OverlayError
 DEFAULT_SCHEMA = defn_mod.SCHEMAS_DIR / "incident-record.schema.json"
@@ -120,11 +121,19 @@ def validate(
         path = "/" + "/".join(str(p) for p in err.absolute_path)
         result.schema_violations.append(SchemaViolation(path=path, message=err.message))
 
+    ob_defn = defn_mod.load("notification-obligations", overlay_paths=overlay_paths)
+    ob_sep = overlay_mod.separator_of(ob_defn)
     obligations = {
-        o["id"]: o
-        for o in defn_mod.load("notification-obligations", overlay_paths=overlay_paths).get("obligations", [])
+        defn_mod.local_id(o["id"], ob_sep): o
+        for o in overlay_mod.group_items(ob_defn).get("obligations", {}).get("leaves", [])
     }
-    clauses = {c["id"]: c for c in defn_mod.load("dpa-clauses", overlay_paths=overlay_paths).get("clauses", [])}
+
+    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=overlay_paths)
+    cl_sep = overlay_mod.separator_of(cl_defn)
+    clauses = {
+        defn_mod.local_id(c["id"], cl_sep): c
+        for c in overlay_mod.group_items(cl_defn).get("clauses", {}).get("leaves", [])
+    }
 
     detected = _parse_dt(data.get("detected_at"))
     confirmed = _parse_dt(data.get("confirmed_at"))

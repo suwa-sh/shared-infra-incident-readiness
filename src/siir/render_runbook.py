@@ -29,13 +29,15 @@ class RunbookModel:
     stage3_branches: list[dict] = field(default_factory=list)
 
 
-def _role_names(defn: dict) -> dict[str, str]:
-    return {r["id"]: r.get("name", r["id"]) for r in defn.get("roles", [])}
+def _role_names(defn: dict, group_key: str = "roles") -> dict[str, str]:
+    sep = overlay_mod.separator_of(defn)
+    leaves = overlay_mod.group_items(defn).get(group_key, {}).get("leaves", [])
+    return {defn_mod.local_id(r["id"], sep): r.get("name", defn_mod.local_id(r["id"], sep)) for r in leaves}
 
 
-def _effective_cells(item: dict, org_matrix: dict) -> tuple[dict, str]:
+def _effective_cells(item_id: str, item: dict, org_matrix: dict) -> tuple[dict, str]:
     """Org cells if the org filled this item, else the recommended template."""
-    org = org_matrix.get(item["id"]) or {}
+    org = org_matrix.get(item_id) or {}
     if org:
         return org, "org"
     return item.get("recommended", {}) or {}, "recommended"
@@ -60,9 +62,24 @@ def build(
 ) -> RunbookModel:
     resp = defn_mod.load("responsibility-matrix", overlay_paths=overlay_paths)
     raci = defn_mod.load("incident-raci", overlay_paths=overlay_paths)
-    obligations = {o["id"]: o for o in defn_mod.load("notification-obligations", overlay_paths=overlay_paths).get("obligations", [])}
-    clauses = {c["id"]: c for c in defn_mod.load("dpa-clauses", overlay_paths=overlay_paths).get("clauses", [])}
-    scenarios = {s["id"]: s for s in defn_mod.load("scenarios", overlay_paths=overlay_paths).get("scenarios", [])}
+    ob_defn = defn_mod.load("notification-obligations", overlay_paths=overlay_paths)
+    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=overlay_paths)
+    sc_defn = defn_mod.load("scenarios", overlay_paths=overlay_paths)
+
+    resp_sep = overlay_mod.separator_of(resp)
+    resp_items = overlay_mod.group_items(resp).get("resp", {}).get("leaves", [])
+    raci_sep = overlay_mod.separator_of(raci)
+    raci_activities = overlay_mod.group_items(raci).get("raci_act", {}).get("leaves", [])
+
+    ob_sep = overlay_mod.separator_of(ob_defn)
+    obligations = {defn_mod.local_id(o["id"], ob_sep): o for o in overlay_mod.group_items(ob_defn).get("obligations", {}).get("leaves", [])}
+    cl_sep = overlay_mod.separator_of(cl_defn)
+    clauses = {defn_mod.local_id(c["id"], cl_sep): c for c in overlay_mod.group_items(cl_defn).get("clauses", {}).get("leaves", [])}
+    sc_sep = overlay_mod.separator_of(sc_defn)
+    scenarios = {
+        defn_mod.local_id(s["id"], sc_sep): dict(s, id=defn_mod.local_id(s["id"], sc_sep))
+        for s in overlay_mod.group_items(sc_defn).get("scenarios", {}).get("leaves", [])
+    }
 
     if scenario_id not in scenarios:
         raise KeyError(f"unknown scenario '{scenario_id}'")
@@ -71,27 +88,29 @@ def build(
     answers = overlay_mod.load_yaml(answers_path) or {}
     org_matrix = answers.get("matrix", {}) or {}
     resp_names = _role_names(resp)
+    raci_names = _role_names(raci, "raci_roles")
 
     # --- Stage 1: responsibility boundary table (effective cells) ---
     item_owner: dict[str, dict] = {}
-    for item in resp["items"]:
-        cells, source = _effective_cells(item, org_matrix)
+    for item in resp_items:
+        iid = defn_mod.local_id(item["id"], resp_sep)
+        cells, source = _effective_cells(iid, item, org_matrix)
         accountable = _names(_roles_with(cells, "A"), resp_names)
         responsible = _names(_roles_with(cells, "R"), resp_names)
         gray = _names(_roles_with(cells, "tbd"), resp_names)
         owner = {
-            "id": item["id"],
+            "id": iid,
             "text": item.get("text", ""),
             "accountable": accountable,
             "responsible": responsible,
             "gray": gray,
             "source": source,
         }
-        item_owner[item["id"]] = owner
+        item_owner[iid] = owner
 
     focus = set(scenario.get("focus_items", []))
-    stage1 = [dict(item_owner[i["id"]], focus=i["id"] in focus) for i in resp["items"]]
-    stage2 = _build_stage2(raci, obligations, clauses, focus)
+    stage1 = [dict(item_owner[defn_mod.local_id(i["id"], resp_sep)], focus=defn_mod.local_id(i["id"], resp_sep) in focus) for i in resp_items]
+    stage2 = _build_stage2(raci_activities, raci_names, obligations, clauses, focus, raci_sep)
     stage3 = _build_stage3(item_owner, obligations)
 
     return RunbookModel(
@@ -118,19 +137,19 @@ def _activity_sla(act: dict, obligations: dict, clauses: dict) -> str | None:
     return None
 
 
-def _build_stage2(raci: dict, obligations: dict, clauses: dict, focus: set) -> list[dict]:
-    names = _role_names(raci)
+def _build_stage2(raci_activities: list[dict], names: dict[str, str], obligations: dict, clauses: dict, focus: set, sep: str) -> list[dict]:
     stage2 = []
-    for act in raci["activities"]:
+    for act in raci_activities:
+        aid = defn_mod.local_id(act["id"], sep)
         cells = act.get("cells", {})
         stage2.append(
             {
-                "id": act["id"],
+                "id": aid,
                 "text": act.get("text", ""),
                 "accountable": _names([r for r, v in cells.items() if _cell_has(v, "A")], names),
                 "responsible": _names([r for r, v in cells.items() if _cell_has(v, "R")], names),
                 "sla": _activity_sla(act, obligations, clauses),
-                "focus": act["id"] in focus,
+                "focus": aid in focus,
             }
         )
     return stage2

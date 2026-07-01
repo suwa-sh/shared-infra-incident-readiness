@@ -141,13 +141,17 @@ def check(
     answers = overlay_mod.load_yaml(answers_path) or {}
     matrix = answers.get("matrix", {}) or {}
 
+    sep = overlay_mod.separator_of(defn)
+    resp_leaves = overlay_mod.group_items(defn).get("resp", {}).get("leaves", [])
+
     items: list[ItemResult] = []
-    for item in defn["items"]:
-        cells = matrix.get(item["id"], {}) or {}
+    for item in resp_leaves:
+        iid = defn_mod.local_id(item["id"], sep)
+        cells = matrix.get(iid, {}) or {}
         verdict, reason, count_a, has_r, gray = _verdict_for(cells)
         items.append(
             ItemResult(
-                id=item["id"],
+                id=iid,
                 text=item.get("text", ""),
                 verdict=verdict,
                 reason=reason,

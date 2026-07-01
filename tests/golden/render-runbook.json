@@ -1,0 +1,351 @@
+{
+  "target": "共用メール基盤 (6 ISP OEM)",
+  "scenario": "rce-6brand",
+  "stage1_responsibility": [
+    {
+      "id": "RB01",
+      "text": "利用者向け窓口・本人通知",
+      "accountable": [],
+      "responsible": [
+        "委託元ISP"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB02",
+      "text": "個情委への速報・確報",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": true
+    },
+    {
+      "id": "RB03",
+      "text": "総務省への重大事故報告",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": true
+    },
+    {
+      "id": "RB04",
+      "text": "プレスリリース (共同 / 個別の決定)",
+      "accountable": [],
+      "responsible": [],
+      "gray": [
+        "OEM基盤運用者"
+      ],
+      "source": "org",
+      "focus": true
+    },
+    {
+      "id": "RB05",
+      "text": "監査ログの取得・保持・提供",
+      "accountable": [],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB06",
+      "text": "アクセス鍵・パスワードハッシュの管理",
+      "accountable": [],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB07",
+      "text": "第三者製ソフトウェアの脆弱性管理",
+      "accountable": [
+        "SaaS / 第三者SWベンダー"
+      ],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB08",
+      "text": "フォレンジック調査",
+      "accountable": [],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB09",
+      "text": "影響範囲確定 (件数・テナント特定)",
+      "accountable": [],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": true
+    },
+    {
+      "id": "RB10",
+      "text": "パスワードリセット・強制ログアウト",
+      "accountable": [],
+      "responsible": [
+        "委託元ISP"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB11",
+      "text": "代替手段の提供 (臨時メール経路等)",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM基盤運用者"
+      ],
+      "gray": [],
+      "source": "org",
+      "focus": false
+    },
+    {
+      "id": "RB12",
+      "text": "平時 / 事故時の合同演習主催",
+      "accountable": [
+        "OEM基盤運用者"
+      ],
+      "responsible": [],
+      "gray": [],
+      "source": "recommended",
+      "focus": false
+    }
+  ],
+  "stage2_runbook": [
+    {
+      "id": "AC01",
+      "text": "検知 (SIEM / EDR)",
+      "accountable": [
+        "OEM運用者"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC02",
+      "text": "トリアージ (事故認定)",
+      "accountable": [
+        "OEM運用者"
+      ],
+      "responsible": [
+        "運用BPO"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC03",
+      "text": "委託元への速報",
+      "accountable": [],
+      "responsible": [
+        "委託元ISP",
+        "OEM運用者"
+      ],
+      "sla": "24h (委託先→委託元 漏えい通知SLA)",
+      "focus": true
+    },
+    {
+      "id": "AC04",
+      "text": "個情委速報",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": "速やか (運用3-5日説は二次情報・未確認)",
+      "focus": true
+    },
+    {
+      "id": "AC05",
+      "text": "総務省速報",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": "遅滞なく",
+      "focus": true
+    },
+    {
+      "id": "AC06",
+      "text": "利用者影響範囲確定",
+      "accountable": [
+        "OEM運用者"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC07",
+      "text": "パスワードリセット決定",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM運用者",
+        "運用BPO"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC08",
+      "text": "プレスリリース合意",
+      "accountable": [
+        "OEM運用者"
+      ],
+      "responsible": [],
+      "sla": null,
+      "focus": true
+    },
+    {
+      "id": "AC09",
+      "text": "同時公表タイミング調整",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC10",
+      "text": "本人通知",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "委託元ISP"
+      ],
+      "sla": "速やか",
+      "focus": false
+    },
+    {
+      "id": "AC11",
+      "text": "フォレンジック開始",
+      "accountable": [],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC12",
+      "text": "パッチ適用・暫定遮断",
+      "accountable": [
+        "OEM運用者",
+        "SWベンダー"
+      ],
+      "responsible": [
+        "OEM運用者",
+        "運用BPO"
+      ],
+      "sla": "72h (第三者ソフトウェアのパッチ管理)",
+      "focus": false
+    },
+    {
+      "id": "AC13",
+      "text": "個情委確報",
+      "accountable": [
+        "委託元ISP"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": "原則30日",
+      "focus": false
+    },
+    {
+      "id": "AC14",
+      "text": "再発防止策の策定",
+      "accountable": [
+        "OEM運用者"
+      ],
+      "responsible": [
+        "OEM運用者"
+      ],
+      "sla": null,
+      "focus": false
+    },
+    {
+      "id": "AC15",
+      "text": "事後ふりかえり (Tabletop含む)",
+      "accountable": [
+        "委託元ISP",
+        "OEM運用者"
+      ],
+      "responsible": [],
+      "sla": null,
+      "focus": false
+    }
+  ],
+  "stage3_communication_tree": [
+    {
+      "audience": "利用者 (本人通知)",
+      "ref": "RB01 / OB04",
+      "owner": "A=(未割当) / R=委託元ISP",
+      "deadline": "速やか"
+    },
+    {
+      "audience": "報道 (プレスリリース)",
+      "ref": "RB04",
+      "owner": "A=(未割当) / R=-",
+      "deadline": "共同 / 個別を Accountable が即決"
+    },
+    {
+      "audience": "個情委 (速報→確報)",
+      "ref": "RB02 / OB01・OB02",
+      "owner": "A=委託元ISP / R=OEM基盤運用者",
+      "deadline": "速やか (運用3-5日説は二次情報・未確認) → 原則30日"
+    },
+    {
+      "audience": "総務省 (重大事故報告)",
+      "ref": "RB03 / OB03",
+      "owner": "A=委託元ISP / R=OEM基盤運用者",
+      "deadline": "遅滞なく"
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+[
+  {
+    "name": "shared-infra-responsibility-matrix",
+    "version": 1,
+    "array": "items",
+    "count": 12,
+    "ids": [
+      "RB01",
+      "RB02",
+      "RB03",
+      "RB04",
+      "RB05",
+      "RB06",
+      "RB07",
+      "RB08",
+      "RB09",
+      "RB10",
+      "RB11",
+      "RB12"
+    ],
+    "roles": [
+      "principal_isp",
+      "oem_operator",
+      "ops_bpo",
+      "sw_vendor"
+    ],
+    "extension_points": [
+      "roles",
+      "items"
+    ]
+  },
+  {
+    "name": "shared-infra-incident-raci",
+    "version": 1,
+    "array": "activities",
+    "count": 15,
+    "ids": [
+      "AC01",
+      "AC02",
+      "AC03",
+      "AC04",
+      "AC05",
+      "AC06",
+      "AC07",
+      "AC08",
+      "AC09",
+      "AC10",
+      "AC11",
+      "AC12",
+      "AC13",
+      "AC14",
+      "AC15"
+    ],
+    "roles": [
+      "end_user",
+      "principal_isp",
+      "oem_operator",
+      "ops_bpo",
+      "sw_vendor"
+    ],
+    "extension_points": [
+      "roles",
+      "activities"
+    ]
+  },
+  {
+    "name": "shared-infra-dpa-clauses",
+    "version": 1,
+    "array": "clauses",
+    "count": 10,
+    "ids": [
+      "DPA01",
+      "DPA02",
+      "DPA03",
+      "DPA04",
+      "DPA05",
+      "DPA06",
+      "DPA07",
+      "DPA08",
+      "DPA09",
+      "DPA10"
+    ],
+    "roles": [],
+    "extension_points": [
+      "clauses",
+      "clauses[].sla_hours"
+    ]
+  },
+  {
+    "name": "shared-infra-notification-obligations",
+    "version": 1,
+    "array": "obligations",
+    "count": 6,
+    "ids": [
+      "OB01",
+      "OB02",
+      "OB02b",
+      "OB03",
+      "OB04",
+      "OB05"
+    ],
+    "roles": [],
+    "extension_points": [
+      "obligations",
+      "obligations[].duration_hours"
+    ]
+  },
+  {
+    "name": "shared-infra-tabletop-scenarios",
+    "version": 1,
+    "array": "scenarios",
+    "count": 1,
+    "ids": [
+      "rce-6brand"
+    ],
+    "roles": [],
+    "extension_points": [
+      "scenarios"
+    ]
+  }
+]

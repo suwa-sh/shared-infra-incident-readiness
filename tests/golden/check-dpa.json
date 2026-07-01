@@ -1,0 +1,67 @@
+{
+  "target": "共用メール基盤 委託契約 v1",
+  "conclusion": "BLOCK",
+  "score": 0.7,
+  "clauses": [
+    {
+      "id": "DPA01",
+      "title": "処理内容の特定",
+      "required": true,
+      "status": "present"
+    },
+    {
+      "id": "DPA02",
+      "title": "再委託の事前承認",
+      "required": true,
+      "status": "present"
+    },
+    {
+      "id": "DPA03",
+      "title": "委託先→委託元 漏えい通知SLA",
+      "required": true,
+      "status": "missing"
+    },
+    {
+      "id": "DPA04",
+      "title": "本人通知の主体明示",
+      "required": true,
+      "status": "present"
+    },
+    {
+      "id": "DPA05",
+      "title": "規制当局通知の主体明示",
+      "required": true,
+      "status": "partial"
+    },
+    {
+      "id": "DPA06",
+      "title": "監査ログの保持期間と提供義務",
+      "required": true,
+      "status": "present"
+    },
+    {
+      "id": "DPA07",
+      "title": "アクセス鍵・パスワードハッシュ管理責任",
+      "required": true,
+      "status": "present"
+    },
+    {
+      "id": "DPA08",
+      "title": "第三者ソフトウェアのパッチ管理",
+      "required": true,
+      "status": "present"
+    },
+    {
+      "id": "DPA09",
+      "title": "インシデント時の合同対応条項",
+      "required": true,
+      "status": "partial"
+    },
+    {
+      "id": "DPA10",
+      "title": "演習義務",
+      "required": true,
+      "status": "present"
+    }
+  ]
+}

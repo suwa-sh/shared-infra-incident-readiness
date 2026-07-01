@@ -40,6 +40,16 @@ def definition_path(name: str) -> Path:
     return DEFINITIONS_DIR / DEFINITION_FILES[name]
 
 
+def local_id(item_id: str, sep: str) -> str:
+    """A leaf's id without its group prefix (``clauses.DPA01`` -> ``DPA01``).
+
+    Answers / overlays / cross-references (obligation_ref, clause_ref,
+    focus_items, ...) are all written in this short form, unaffected by which
+    group an item lives in.
+    """
+    return item_id.split(sep, 1)[1] if sep in item_id else item_id
+
+
 def load(
     name: str,
     overlay_paths: list[str | Path] | None = None,

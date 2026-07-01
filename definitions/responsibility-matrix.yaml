@@ -1,5 +1,6 @@
 version: 1
 name: shared-infra-responsibility-matrix
+separator: "."
 description: |
   Responsibility boundary table for shared-infrastructure incident initial
   response. 12 responsibility items x 4 base roles, one R/A/C/I letter per cell.
@@ -10,10 +11,8 @@ description: |
 # 拡張ポイント宣言: overlay で何ができるかを self-documenting にする。
 # overlay エンジン (src/siir/overlay.py) のマージ分岐はこの宣言と手動同期する。
 extension_points:
-  - path: roles
-    allow: add            # 4→5 ロール拡張 (例: 利用者列の追加)。既存ロールの上書き・削除は不可
-  - path: items
-    allow: add            # 責任項目の追加。既存項目のセル書換え・削除は不可
+  - {group: "roles", allow: add}   # 4->5 ロール拡張 (例: 利用者列の追加)。既存ロールの上書き・削除は不可
+  - {group: "resp", allow: add}    # 責任項目の追加。既存項目のセル書換え・削除は不可
 
 # 凡例: R=Responsible(実施) / A=Accountable(説明責任) / C=Consulted(相談) / I=Informed(通知)
 # セルの拡張値: tbd / negotiate=「不明・都度協議」を明示的に残す箱 (RACI のグレーゾーン処理)
@@ -25,58 +24,51 @@ legend:
   tbd: 不明・都度協議 (gray zone を明示)
   negotiate: 不明・都度協議 (tbd の別名)
 
-roles:
-  - id: principal_isp
-    name: 委託元ISP
-    name_en: Delegating ISP
-  - id: oem_operator
-    name: OEM基盤運用者
-    name_en: OEM platform operator
-  - id: ops_bpo
-    name: 運用受託BPO
-    name_en: Operations BPO
-  - id: sw_vendor
-    name: SaaS / 第三者SWベンダー
-    name_en: SaaS / third-party SW vendor
-
 items:
-  - id: RB01
+  - {id: "roles", label: Roles}   # group ヘッダ
+  - {id: "roles.principal_isp", name: 委託元ISP, name_en: Delegating ISP}
+  - {id: "roles.oem_operator", name: OEM基盤運用者, name_en: OEM platform operator}
+  - {id: "roles.ops_bpo", name: 運用受託BPO, name_en: Operations BPO}
+  - {id: "roles.sw_vendor", name: "SaaS / 第三者SWベンダー", name_en: "SaaS / third-party SW vendor"}
+
+  - {id: "resp", label: Responsibility items}   # group ヘッダ
+  - id: "resp.RB01"
     text: 利用者向け窓口・本人通知
-    recommended: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }
-  - id: RB02
+    recommended: {principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I}
+  - id: "resp.RB02"
     text: 個情委への速報・確報
     note: OEM運用者が共同窓口を引き受ける場合は R
-    recommended: { principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
-  - id: RB03
+    recommended: {principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I}
+  - id: "resp.RB03"
     text: 総務省への重大事故報告
     note: 基盤側事故時は OEM運用者が R
-    recommended: { principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
-  - id: RB04
+    recommended: {principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I}
+  - id: "resp.RB04"
     text: プレスリリース (共同 / 個別の決定)
-    recommended: { principal_isp: C, oem_operator: A, ops_bpo: I, sw_vendor: I }
-  - id: RB05
+    recommended: {principal_isp: C, oem_operator: A, ops_bpo: I, sw_vendor: I}
+  - id: "resp.RB05"
     text: 監査ログの取得・保持・提供
-    recommended: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I }
-  - id: RB06
+    recommended: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  - id: "resp.RB06"
     text: アクセス鍵・パスワードハッシュの管理
-    recommended: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I }
-  - id: RB07
+    recommended: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  - id: "resp.RB07"
     text: 第三者製ソフトウェアの脆弱性管理
     note: SWベンダーはパッチ提供で A
-    recommended: { principal_isp: I, oem_operator: R, ops_bpo: C, sw_vendor: A }
-  - id: RB08
+    recommended: {principal_isp: I, oem_operator: R, ops_bpo: C, sw_vendor: A}
+  - id: "resp.RB08"
     text: フォレンジック調査
     note: SWベンダーは技術支援で C
-    recommended: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C }
-  - id: RB09
+    recommended: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C}
+  - id: "resp.RB09"
     text: 影響範囲確定 (件数・テナント特定)
-    recommended: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I }
-  - id: RB10
+    recommended: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  - id: "resp.RB10"
     text: パスワードリセット・強制ログアウト
-    recommended: { principal_isp: R, oem_operator: C, ops_bpo: C, sw_vendor: I }
-  - id: RB11
+    recommended: {principal_isp: R, oem_operator: C, ops_bpo: C, sw_vendor: I}
+  - id: "resp.RB11"
     text: 代替手段の提供 (臨時メール経路等)
-    recommended: { principal_isp: A, oem_operator: R, ops_bpo: C, sw_vendor: I }
-  - id: RB12
+    recommended: {principal_isp: A, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  - id: "resp.RB12"
     text: 平時 / 事故時の合同演習主催
-    recommended: { principal_isp: C, oem_operator: A, ops_bpo: C, sw_vendor: C }
+    recommended: {principal_isp: C, oem_operator: A, ops_bpo: C, sw_vendor: C}

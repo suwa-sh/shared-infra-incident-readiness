@@ -72,12 +72,16 @@ def check(
     answers = overlay_mod.load_yaml(answers_path) or {}
     statuses = answers.get("clauses", {}) or {}
 
+    sep = overlay_mod.separator_of(defn)
+    clause_leaves = overlay_mod.group_items(defn).get("clauses", {}).get("leaves", [])
+
     clauses: list[ClauseResult] = []
-    for clause in defn["clauses"]:
-        status = _normalize_status(statuses.get(clause["id"]))
+    for clause in clause_leaves:
+        cid = defn_mod.local_id(clause["id"], sep)
+        status = _normalize_status(statuses.get(cid))
         clauses.append(
             ClauseResult(
-                id=clause["id"],
+                id=cid,
                 title=clause.get("title", ""),
                 required=bool(clause.get("required", True)),
                 status=status,
