@@ -70,21 +70,23 @@ graph LR
 
 ### 情報モデル (定義ファイルの構造 = overlay が拡張する契約)
 
+定義ファイルは単一のフラット `items` リストです。id は `<group>`(group ヘッダ、区切り無し。例 `roles` / `resp`)か `<group>.<leaf>`(leaf、区切り 1 個。例 `resp.RB01`)のどちらかで、ネストは 1 階層に固定されます。group ヘッダは group レベルの値を、leaf は明細(`text` 等)+ 推奨割当 `recommended` のような自由な payload を持てます。answers・overlay・他定義からの参照(`obligation_ref` 等)は group 接頭辞のない短い id(`RB01` 等)で書きます。
+
 ```mermaid
 classDiagram
   class Definition {
     +int version
     +string name
+    +string separator
     +ExtensionPoint[] extension_points
+    +Item[] items
   }
   class ExtensionPoint {
-    +string path
+    +string group
     +string allow
+    +string level
+    +string field
     +string direction
-  }
-  class Role {
-    +string id
-    +string name
   }
   class Item {
     +string id
@@ -92,11 +94,11 @@ classDiagram
     +map recommended
   }
   Definition "1" o-- "*" ExtensionPoint
-  Definition "1" o-- "*" Role
   Definition "1" o-- "*" Item
+  note for Item "id が '<group>' なら group ヘッダ、\n'<group>.<leaf>' なら leaf (roles.principal_isp / resp.RB01 等)"
 ```
 
-各 `Item` は推奨割当 `recommended`(記事のテンプレ値)を持ち、組織は answers でこれを写し取って自社用に調整します。`extension_points` は、overlay で何を `add` / `strengthen` できるかを self-documenting に宣言します(→ [02](02_incident_raci_and_sla.md) の SLA 強化、overlay 規則の詳細は [README](../README.ja.md))。
+各 leaf item は推奨割当 `recommended`(記事のテンプレ値)を持ち、組織は answers でこれを写し取って自社用に調整します。`extension_points` は `{group: <selector>, allow: add}` または `{group: <selector>, level: leaf|group, field: <f>, allow: strengthen, direction: lower|higher}` の形で、overlay で何を `add` / `strengthen` できるかを self-documenting に宣言します(→ [02](02_incident_raci_and_sla.md) の SLA 強化、overlay 規則の詳細は [README](../README.ja.md))。
 
 ### 採点ロジック (ownership clarity)
 
