@@ -1,6 +1,6 @@
-# Builds the container image and pushes it to GHCR on a version tag, then
-# creates a GitHub Release. The overlay engine version is parsed from the
-# exact pin in pyproject and recorded as an OCI label.
+# Builds a multi-arch (amd64 + arm64) container image and pushes it to GHCR on a
+# version tag, then creates a GitHub Release. The overlay engine version is
+# parsed from the exact pin in pyproject and recorded as an OCI label.
 # SHA pinned actions per the OSS hardening checklist.
 name: release
 
@@ -23,7 +23,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build and push image to GHCR, then create the Release
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
+
+      - name: Build and push multi-arch image to GHCR
         env:
           REGISTRY: ghcr.io
           IMAGE_NAME: ${{ github.repository }}
@@ -37,12 +43,18 @@ jobs:
           IMAGE=$(printf '%s/%s' "$REGISTRY" "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
           APP_VERSION="${TAG#v}"
           echo "$GH_TOKEN" | docker login "$REGISTRY" -u "$ACTOR" --password-stdin
-          docker build \
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
             --build-arg "OVERLAY_ENGINE_VERSION=${ENGINE_VER:-unknown}" \
             --build-arg "APP_VERSION=${APP_VERSION}" \
-            -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
-          docker push "$IMAGE:$TAG"
-          docker push "$IMAGE:latest"
+            -t "$IMAGE:$TAG" -t "$IMAGE:latest" \
+            --push .
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \

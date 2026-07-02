@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shared-infra-incident-readiness"
-version = "0.2.0"
+version = "0.2.1"
 description = "Diagnostic tool and extensible framework for the first 30 minutes of a shared-infrastructure incident: responsibility boundaries, DPA clauses, notification SLA, and Tabletop exercises."
 readme = "README.md"
 requires-python = ">=3.10"
