@@ -36,30 +36,40 @@ Key features:
 
 ## Quick start (3 minutes)
 
+No setup — pull the published image and run it. The bundled samples work out
+of the box:
+
 ```bash
-git clone https://github.com/suwa-sh/shared-infra-incident-readiness.git
-cd shared-infra-incident-readiness
-pip install -r requirements.txt
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 --version
 
 # 1. Score a filled responsibility-boundary matrix
-bin/siir check-responsibility examples/responsibility/sample-oem-mail.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  check-responsibility examples/responsibility/sample-oem-mail.yaml
 
 # 2. Check DPA clause coverage
-bin/siir check-dpa examples/dpa/sample-dpa-answers.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  check-dpa examples/dpa/sample-dpa-answers.yaml
 
 # 3. Validate an incident record + its notification SLA timeline
-bin/siir validate-record examples/records/sample-incident.json --level extended
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  validate-record examples/records/sample-incident.json --level extended
 
 # 4. Render a 3-stage runbook (responsibility table -> runbook -> comms tree)
-bin/siir render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
 
 # 5. Render a Tabletop exercise program
-bin/siir tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
 
 # 6. Validate an overlay (add / strengthen only) and inspect definitions
-bin/siir check-overlay examples/overlays/sample-company/extra-clauses.yaml
-bin/siir list-definitions
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  check-overlay examples/overlays/sample-company/extra-clauses.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 list-definitions
 ```
+
+`--version` prints the app version and the bundled overlay engine version, e.g.
+`siir 0.2.0 (overlay-scoring-skeleton 0.1.0)`.
 
 Every command returns a deterministic exit code so you can gate CI on it:
 **0** ok · **1** partial (yellow: warnings, deferred items, not-yet-sent
@@ -68,29 +78,37 @@ overlay) · **3** input error (file missing / parse error).
 
 ## Usage workflow
 
-The commands run against *your* data. Copy the files under `examples/` as
-templates, edit them with your own values, then run the commands in this order —
-from peacetime preparation to incident-time validation.
+The commands run against *your* data. Mount the directory that holds your files
+into the container. A shell function keeps the rest of this guide readable:
 
-1. **Prepare** — copy a sample to start your own input file:
-   `cp examples/responsibility/sample-oem-mail.yaml my-responsibility.yaml`
+```bash
+siir() { docker run --rm -v "$PWD:/data" -w /data \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 "$@"; }
+```
+
+Grab a sample from [`examples/`](examples/) as a template, edit it with your own
+values, then run the commands in this order — from peacetime preparation to
+incident-time validation.
+
+1. **Prepare** — start your own input files from a sample
+   (`my-responsibility.yaml`, `my-dpa.yaml`).
 2. **Check responsibilities (peacetime)** — fill the `matrix` with your own
    R/A/C/I (write `tbd` for a box you have not decided yet), then
-   `bin/siir check-responsibility my-responsibility.yaml`. Fix `BLOCK` rows
+   `siir check-responsibility my-responsibility.yaml`. Fix `BLOCK` rows
    first, then the `REVISE` gray zones.
 3. **Check the contract (peacetime)** — mark each clause `present` / `partial` /
    `missing` in a copy of `examples/dpa/sample-dpa-answers.yaml`, then
-   `bin/siir check-dpa my-dpa.yaml`.
+   `siir check-dpa my-dpa.yaml`.
 4. **Prepare runbooks & drills** — generate the deterministic 3-stage runbook and
    the Tabletop program:
-   `bin/siir render-runbook my-responsibility.yaml --scenario rce-6brand` and
-   `bin/siir tabletop --scenario rce-6brand my-responsibility.yaml`
-   (list scenario ids with `bin/siir list-definitions`).
+   `siir render-runbook my-responsibility.yaml --scenario rce-6brand` and
+   `siir tabletop --scenario rce-6brand my-responsibility.yaml`
+   (list scenario ids with `siir list-definitions`).
 5. **Validate at incident time** — build a real incident record from
    `examples/records/sample-incident.json` and check the notification timeline:
-   `bin/siir validate-record my-incident.json --level extended`.
+   `siir validate-record my-incident.json --level extended`.
 6. **Extend (optional)** — add your own roles / clauses / scenarios via an
-   overlay, validated by `bin/siir check-overlay <path>` and applied with
+   overlay, validated by `siir check-overlay <path>` and applied with
    `--overlay <path>`.
 
 Sample output (`check-responsibility`) — `[OK]` ok / `[..]` revise / `[NG]` block
@@ -147,12 +165,12 @@ operations are allowed, declared per definition in `extension_points`:
 - **`strengthen`** — move a declared numeric field in the stricter direction
   only (e.g. shorten an SLA from 24h to 12h). Weakening is rejected.
 
-`bin/siir check-overlay <path>` validates an overlay before you apply it.
+`siir check-overlay <path>` (using the `siir` shell function from
+[Usage workflow](#usage-workflow)) validates an overlay before you apply it.
 
 ## Development
 
 ```bash
-pip install -r requirements.txt pytest
 pytest tests/                  # boundary conditions, exit codes
 bin/siir --help                # CLI smoke
 npx md-mermaid-lint docs/*.md  # diagram syntax

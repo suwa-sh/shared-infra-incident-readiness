@@ -21,41 +21,52 @@
 
 ## Quick start(3 分)
 
+セットアップ不要です。公開済みイメージを pull して実行するだけで、同梱のサンプルがそのまま動きます。
+
 ```bash
-git clone https://github.com/suwa-sh/shared-infra-incident-readiness.git
-cd shared-infra-incident-readiness
-pip install -r requirements.txt
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 --version
 
 # 同梱のサンプルで各コマンドの出力を確認します
-bin/siir check-responsibility examples/responsibility/sample-oem-mail.yaml
-bin/siir check-dpa examples/dpa/sample-dpa-answers.yaml
-bin/siir validate-record examples/records/sample-incident.json --level extended
-bin/siir render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
-bin/siir tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  check-responsibility examples/responsibility/sample-oem-mail.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  check-dpa examples/dpa/sample-dpa-answers.yaml
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  validate-record examples/records/sample-incident.json --level extended
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+  tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
 ```
+
+`--version` は、アプリのバージョンと同梱の overlay エンジンのバージョンを表示します(例: `siir 0.2.0 (overlay-scoring-skeleton 0.1.0)`)。
 
 各コマンドは決定的な exit code を返すので、CI のゲートに使えます。
 **0** ok ・ **1** partial(黄: 警告 / 都度協議 / 未送信) ・ **2** block(欠落・条項不足・SLA 違反・overlay 却下) ・ **3** 入力エラー。
 
 ## 使い方(想定ワークフロー)
 
-コマンドは「自分のデータを用意して実行する」ものです。同梱の `examples/` をひな型としてコピーし、自社の値に書き換えてから実行します。平時の備えから事故時の検証まで、次の順で使います。
+コマンドは「自分のデータを用意して実行する」ものです。自社のファイルが入ったディレクトリをコンテナにマウントします。以降の説明を読みやすくするため、シェル関数を定義しておきます。
+
+```bash
+siir() { docker run --rm -v "$PWD:/data" -w /data \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 "$@"; }
+```
+
+同梱の [`examples/`](examples/) をひな型として、自社の値に書き換えてから実行します。平時の備えから事故時の検証まで、次の順で使います。
 
 ### ステップ 0 — 準備
 
-サンプルをコピーして、自社用の入力ファイルを作ります。
-
-```bash
-cp examples/responsibility/sample-oem-mail.yaml my-responsibility.yaml
-cp examples/dpa/sample-dpa-answers.yaml         my-dpa.yaml
-```
+[`examples/responsibility/sample-oem-mail.yaml`](examples/responsibility/sample-oem-mail.yaml) と
+[`examples/dpa/sample-dpa-answers.yaml`](examples/dpa/sample-dpa-answers.yaml) をひな型に、
+`my-responsibility.yaml` / `my-dpa.yaml` として自社用の入力ファイルを作ります。
 
 ### ステップ 1 — 責任境界を点検する(平時)
 
 `my-responsibility.yaml` の `matrix` を、自社の事故初動の割当(R/A/C/I)に書き換えます。まだ決まっていない箱は `tbd`(都度協議)と書いて構いません。
 
 ```bash
-bin/siir check-responsibility my-responsibility.yaml
+siir check-responsibility my-responsibility.yaml
 ```
 
 出力例(抜粋):
@@ -79,7 +90,7 @@ Conclusion: BLOCK
 `my-dpa.yaml` の各条項を `present` / `partial` / `missing` で記入し、委託契約に必須 10 条項が揃っているかを確認します。
 
 ```bash
-bin/siir check-dpa my-dpa.yaml
+siir check-dpa my-dpa.yaml
 ```
 
 出力例(抜粋):
@@ -102,8 +113,8 @@ Conclusion: BLOCK
 責任境界表とシナリオから、初動ランブック(責任境界表 → Runbook → Communication Tree)と Tabletop 演習プログラムを生成します。出力は決定的なので、レビューや差分管理ができます。
 
 ```bash
-bin/siir render-runbook my-responsibility.yaml --scenario rce-6brand
-bin/siir tabletop --scenario rce-6brand my-responsibility.yaml
+siir render-runbook my-responsibility.yaml --scenario rce-6brand
+siir tabletop --scenario rce-6brand my-responsibility.yaml
 ```
 
 `render-runbook` の出力例(Markdown、抜粋):
@@ -136,15 +147,14 @@ bin/siir tabletop --scenario rce-6brand my-responsibility.yaml
 ... (ファシリ設問 / focus 項目が続く)
 ```
 
-出力は Markdown なので、そのまま社内 wiki やランブックに貼れます。利用できるシナリオ id は `bin/siir list-definitions` で確認できます。詳細は [docs/04](docs/04_tabletop_and_runbook.md) を参照してください。
+出力は Markdown なので、そのまま社内 wiki やランブックに貼れます。利用できるシナリオ id は `siir list-definitions` で確認できます。詳細は [docs/04](docs/04_tabletop_and_runbook.md) を参照してください。
 
 ### ステップ 4 — 事故が起きたら通知 SLA を検証する(事故時)
 
-`examples/records/sample-incident.json` をひな型に、実際の事故記録(影響ブランド・共有コンポーネント・通知タイムライン)を作り、通知が SLA を守れているかを検証します。
+[`examples/records/sample-incident.json`](examples/records/sample-incident.json) をひな型に、実際の事故記録(影響ブランド・共有コンポーネント・通知タイムライン)を `my-incident.json` として作り、通知が SLA を守れているかを検証します。
 
 ```bash
-cp examples/records/sample-incident.json my-incident.json
-bin/siir validate-record my-incident.json --level extended
+siir validate-record my-incident.json --level extended
 ```
 
 出力例:
@@ -167,10 +177,12 @@ Conclusion: BLOCK
 ### ステップ 5 — 自社ルールで拡張する(任意)
 
 各社固有のロール・条項・シナリオは overlay で追加し、適用前に検証します。
+[`examples/overlays/sample-company/extra-clauses.yaml`](examples/overlays/sample-company/extra-clauses.yaml)
+をひな型に `my-overlay.yaml` を作ります。
 
 ```bash
-bin/siir check-overlay examples/overlays/sample-company/extra-clauses.yaml
-bin/siir check-dpa my-dpa.yaml --overlay examples/overlays/sample-company/extra-clauses.yaml
+siir check-overlay my-overlay.yaml
+siir check-dpa my-dpa.yaml --overlay my-overlay.yaml
 ```
 
 `check-overlay` の出力例:
@@ -197,12 +209,12 @@ overlay は、フォークせずにフレームワークを拡張する仕組み
 - **`add`** — 新しいロール / 項目 / 条項 / 通知義務 / シナリオを(新しい `id` で)追加します。既存の上書き・削除は却下されます。
 - **`strengthen`** — 宣言された数値フィールドを厳格方向にのみ移動します(例: SLA を 24h→12h に短縮)。緩和は却下されます。
 
-`bin/siir check-overlay <path>` で、適用前に検証します。
+[使い方(想定ワークフロー)](#使い方想定ワークフロー)の `siir` シェル関数を使い、
+`siir check-overlay <path>` で適用前に検証します。
 
 ## 開発
 
 ```bash
-pip install -r requirements.txt pytest
 pytest tests/                  # 境界条件・exit code
 bin/siir --help                # CLI smoke
 npx md-mermaid-lint docs/*.md  # 図の構文
