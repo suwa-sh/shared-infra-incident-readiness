@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # The pinned overlay engine version, passed by the release workflow (parsed from
 # pyproject). Recorded as an OCI label; the authoritative record is the baked-in
