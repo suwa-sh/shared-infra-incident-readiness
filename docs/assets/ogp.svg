@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <rect width="1280" height="640" fill="#0d1117"/>
+  <rect width="1280" height="8" fill="#58a6ff"/>
+  <circle cx="89" cy="93" r="9" fill="#58a6ff"/>
+  <text x="110" y="102" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="26" fill="#8b949e">overlay-scoring family</text>
+  <text x="1200" y="102" text-anchor="end" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="26" fill="#8b949e">MIT</text>
+  <text x="80" y="252" font-family="Menlo, DejaVu Sans Mono, monospace" font-weight="700" font-size="48" fill="#58a6ff">shared-infra-incident-readiness</text>
+  <rect x="82" y="276" width="893" height="4" fill="#58a6ff"/>
+  <text x="80" y="352" font-family="Helvetica Neue, Helvetica, Arial, DejaVu Sans, sans-serif" font-size="42" fill="#e6edf3">Ready for the first 30 minutes</text>
+  <text x="80" y="406" font-family="Helvetica Neue, Helvetica, Arial, DejaVu Sans, sans-serif" font-size="42" fill="#e6edf3">of a shared-infrastructure incident?</text>
+  <text x="80" y="488" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="25" fill="#8b949e">responsibility  ·  DPA clauses  ·  notification SLA  ·  tabletop</text>
+  <rect x="80" y="520" width="484" height="44" rx="22" fill="#161b22" stroke="#30363d"/>
+  <text x="104" y="549" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="22" fill="#7ee787">built on overlay-scoring-skeleton</text>
+  <text x="80" y="612" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="22" fill="#8b949e">docker run ghcr.io/suwa-sh/shared-infra-incident-readiness   ·   MIT</text>
+</svg>
