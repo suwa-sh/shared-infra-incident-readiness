@@ -90,6 +90,24 @@ def test_tabletop_build_with_all_overlays_resolves_scenario_and_focus():
     assert focus_by_ref["RB21"]["gray"], "RB21 の tbd が演習の焦点として出ること"
 
 
+def test_tabletop_focus_resolves_raci_activity_refs():
+    model = tabletop.build("agentic-attacker", answers_path=ANSWERS, overlay_paths=ALL_OV)
+    focus_by_ref = {f["ref"]: f for f in model.focus}
+    for ref in ["AC16", "AC17", "AC18"]:
+        assert focus_by_ref[ref]["text"], f"AC ref {ref} は incident-raci から本文を解決すること"
+        assert focus_by_ref[ref]["source"] == "raci"
+        assert focus_by_ref[ref]["owner"], f"AC ref {ref} は担当 (A) を解決すること"
+
+
+def test_tabletop_sole_responsible_shown_as_owner_not_unassigned():
+    # check-responsibility は「A 無し・単独 R」を ok とするので、演習も未割当と表示しない
+    model = tabletop.build("agentic-attacker", answers_path=ANSWERS, overlay_paths=ALL_OV)
+    focus_by_ref = {f["ref"]: f for f in model.focus}
+    for ref in ["RB05", "RB08"]:  # sample-agentic では oem_operator: R の単独 R
+        assert "未割当" not in focus_by_ref[ref]["owner"]
+        assert "(R)" in focus_by_ref[ref]["owner"]
+
+
 def test_render_runbook_with_all_overlays_includes_added_activities():
     model = render_runbook.build(ANSWERS, "agentic-attacker", overlay_paths=ALL_OV)
     stage2_ids = [a["id"] for a in model.stage2_activities]
@@ -158,3 +176,21 @@ def test_cli_list_definitions_unknown_extends_exits_3(tmp_path):
     bogus = tmp_path / "bogus.yaml"
     bogus.write_text("extends: no-such-definition\nadd: []\n", encoding="utf-8")
     assert _run(["list-definitions", "--overlay", str(bogus)]) == 3
+
+
+@pytest.mark.parametrize(
+    "argv_head",
+    [
+        ["list-definitions"],
+        ["tabletop", "--scenario", "rce-6brand"],
+        ["render-runbook", "REPLACE_ANSWERS", "--scenario", "rce-6brand"],
+    ],
+    ids=["list-definitions", "tabletop", "render-runbook"],
+)
+def test_cli_non_mapping_overlay_exits_3(tmp_path, argv_head):
+    # トップレベルが list の overlay は構造エラー (exit 3)。AttributeError で
+    # exit 1 に漏れない (レビュー指摘: route_overlays の mapping 検証)
+    bad = tmp_path / "bad-list.yaml"
+    bad.write_text("- not-a-mapping\n", encoding="utf-8")
+    argv = [str(ANSWERS) if a == "REPLACE_ANSWERS" else a for a in argv_head]
+    assert _run(argv + ["--overlay", str(bad)]) == 3

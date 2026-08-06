@@ -20,13 +20,23 @@ readable summary plus the first gap to fix.
 
 ## Workflow
 
-1. Read `definitions/responsibility-matrix.yaml` to retrieve the 12 items and
-   4 roles. Do not hard-code them — always read the definition so overlays and
-   version bumps stay in sync.
+0. Decide the overlay list first, and use the SAME list (same order) in every
+   step below. Overlays add items, so discovering questions from the base
+   definition while scoring with an overlay would silently skip the added
+   items (e.g. RB20-RB24 from `overlays/agentic-attacker/responsibility.yaml`,
+   the bundled official overlay). Validate each overlay with
+   `bin/siir check-overlay <path>` before use.
 
-2. For each item, ask who is Accountable / Responsible / Consulted / Informed.
-   Where the org genuinely has not decided, record `tbd` (the framework treats
-   an explicit `tbd` as a healthy gray zone, not a failure).
+1. Read the effective (overlay-applied) definition — not the base file — to
+   retrieve the items and roles:
+   `bin/siir list-definitions --format json --overlay <path> ...` and take the
+   `ids` of the responsibility-matrix entry. Do not hard-code item lists; the
+   base alone has 12 items, but overlays extend it.
+
+2. For each item (including overlay-added ones), ask who is Accountable /
+   Responsible / Consulted / Informed. Where the org genuinely has not
+   decided, record `tbd` (the framework treats an explicit `tbd` as a healthy
+   gray zone, not a failure).
 
 3. Write the answers to a temp YAML:
 
@@ -37,8 +47,9 @@ readable summary plus the first gap to fix.
      ...
    ```
 
-4. Run `bin/siir check-responsibility <tmp.yaml> --format json` (add
-   `--overlay <path>` for each overlay). Capture stdout and the exit code.
+4. Run `bin/siir check-responsibility <tmp.yaml> --format json` with the same
+   `--overlay <path>` list (same order) chosen in step 0. Capture stdout and
+   the exit code.
 
 5. Optionally gather DPA clause coverage and run
    `bin/siir check-dpa <dpa.yaml> --format json`.

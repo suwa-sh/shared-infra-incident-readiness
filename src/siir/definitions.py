@@ -81,7 +81,14 @@ def route_overlays(overlay_paths: list[str | Path] | None) -> dict[str, list[str
         return routed
     key_by_base = {base: key for key, base in base_names().items()}
     for path in overlay_paths:
-        extends = (overlay_mod.load_yaml(path) or {}).get("extends")
+        ov = overlay_mod.load_yaml(path)
+        if not isinstance(ov, dict):
+            # a top-level list/scalar would AttributeError below and leak exit 1;
+            # the CLI contract wants structural input errors as exit 3 (ValueError)
+            raise ValueError(
+                f"overlay '{path}' must be a YAML mapping with an 'extends' field"
+            )
+        extends = ov.get("extends")
         key = key_by_base.get(extends)
         if key is None:
             raise ValueError(

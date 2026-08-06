@@ -52,6 +52,18 @@ def build(
         for r in resp_groups.get("roles", {}).get("leaves", [])
     }
 
+    # RACI activities: focus_items may reference AC ids (e.g. AC16-AC18 from the
+    # agentic-attacker overlay). Resolve their text/owner from incident-raci so
+    # the exercise table is not blank for activity refs.
+    raci = defn_mod.load("incident-raci", overlay_paths=routed["incident-raci"])
+    raci_sep = overlay_mod.separator_of(raci)
+    raci_groups = overlay_mod.group_items(raci)
+    act_by_id = {defn_mod.local_id(a["id"], raci_sep): a for a in raci_groups.get("raci_act", {}).get("leaves", [])}
+    raci_role_names = {
+        defn_mod.local_id(r["id"], raci_sep): r.get("name", defn_mod.local_id(r["id"], raci_sep))
+        for r in raci_groups.get("raci_roles", {}).get("leaves", [])
+    }
+
     org_matrix = {}
     target = None
     if answers_path:
@@ -61,22 +73,41 @@ def build(
 
     focus = []
     for ref in scenario.get("focus_items", []):
-        if not ref.startswith("RB") or ref not in item_by_id:
+        if ref in item_by_id:
+            item = item_by_id[ref]
+            cells = org_matrix.get(ref) or item.get("recommended", {}) or {}
+            acc = [role_names.get(r, r) for r, v in cells.items() if "A" in cr._cell_letters(v)]
+            resp_roles = [role_names.get(r, r) for r, v in cells.items() if "R" in cr._cell_letters(v)]
+            gray = [role_names.get(r, r) for r, v in cells.items() if "tbd" in cr._cell_letters(v)]
+            owner = ", ".join(acc)
+            if not owner and len(resp_roles) == 1:
+                # check-responsibility は「A 無し・単独 R」を明確な owner として ok に
+                # するので、演習側も同じ行を未割当と表示しない (診断との意味論一致)
+                owner = f"{resp_roles[0]} (R)"
+            focus.append(
+                {
+                    "ref": ref,
+                    "text": item.get("text", ""),
+                    "owner": owner or "(未割当 — 演習で確定する)",
+                    "gray": gray,
+                    "source": "org" if org_matrix.get(ref) else "recommended",
+                }
+            )
+        elif ref in act_by_id:
+            act = act_by_id[ref]
+            cells = act.get("cells", {}) or {}
+            acc = [raci_role_names.get(r, r) for r, v in cells.items() if "A" in cr._cell_letters(v)]
+            focus.append(
+                {
+                    "ref": ref,
+                    "text": act.get("text", ""),
+                    "owner": ", ".join(acc) or "(未割当 — 演習で確定する)",
+                    "gray": [],
+                    "source": "raci",
+                }
+            )
+        else:
             focus.append({"ref": ref, "text": "", "owner": None})
-            continue
-        item = item_by_id[ref]
-        cells = org_matrix.get(ref) or item.get("recommended", {}) or {}
-        acc = [role_names.get(r, r) for r, v in cells.items() if "A" in cr._cell_letters(v)]
-        gray = [role_names.get(r, r) for r, v in cells.items() if "tbd" in cr._cell_letters(v)]
-        focus.append(
-            {
-                "ref": ref,
-                "text": item.get("text", ""),
-                "owner": ", ".join(acc) or "(未割当 — 演習で確定する)",
-                "gray": gray,
-                "source": "org" if org_matrix.get(ref) else "recommended",
-            }
-        )
 
     return TabletopModel(scenario=scenario, focus=focus, target=target)
 
@@ -99,7 +130,7 @@ def render_text(model: TabletopModel) -> str:
     for i, q in enumerate(s.get("facilitation_questions", []), 1):
         lines.append(f"{i}. {q}")
     lines += ["", "## focus 項目 (この演習で叩く責任境界)", ""]
-    lines += ["| 項目 | 内容 | Accountable | 都度協議 | 出典 |", "|---|---|---|---|---|"]
+    lines += ["| 項目 | 内容 | 主担 (A / 単独R) | 都度協議 | 出典 |", "|---|---|---|---|---|"]
     for f in model.focus:
         gray = ", ".join(f.get("gray", []) or []) or "-"
         lines.append(f"| {f['ref']} | {f.get('text', '')} | {f.get('owner') or '-'} | {gray} | {f.get('source', '-')} |")

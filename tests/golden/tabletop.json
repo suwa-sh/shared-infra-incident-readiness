@@ -53,29 +53,37 @@
     {
       "ref": "RB09",
       "text": "影響範囲確定 (件数・テナント特定)",
-      "owner": "(未割当 — 演習で確定する)",
+      "owner": "OEM基盤運用者 (R)",
       "gray": [],
       "source": "org"
     },
     {
       "ref": "AC03",
-      "text": "",
-      "owner": null
+      "text": "委託元への速報",
+      "owner": "(未割当 — 演習で確定する)",
+      "gray": [],
+      "source": "raci"
     },
     {
       "ref": "AC04",
-      "text": "",
-      "owner": null
+      "text": "個情委速報",
+      "owner": "委託元ISP",
+      "gray": [],
+      "source": "raci"
     },
     {
       "ref": "AC05",
-      "text": "",
-      "owner": null
+      "text": "総務省速報",
+      "owner": "委託元ISP",
+      "gray": [],
+      "source": "raci"
     },
     {
       "ref": "AC08",
-      "text": "",
-      "owner": null
+      "text": "プレスリリース合意",
+      "owner": "OEM運用者",
+      "gray": [],
+      "source": "raci"
     }
   ]
 }

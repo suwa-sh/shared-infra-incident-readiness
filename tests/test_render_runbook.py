@@ -52,4 +52,5 @@ def test_tabletop_program(examples):
 def test_tabletop_without_answers_uses_recommended(examples):
     model = tt.build("rce-6brand")
     assert model.focus
-    assert all(f.get("source") in {"recommended", None} for f in model.focus)
+    # RB 参照は recommended、AC 参照は incident-raci 由来 (raci)。org は出ない
+    assert all(f.get("source") in {"recommended", "raci", None} for f in model.focus)
