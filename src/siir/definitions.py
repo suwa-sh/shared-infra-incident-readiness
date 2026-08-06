@@ -50,6 +50,48 @@ def local_id(item_id: str, sep: str) -> str:
     return item_id.split(sep, 1)[1] if sep in item_id else item_id
 
 
+_BASE_NAMES: dict[str, str] | None = None
+
+
+def base_names() -> dict[str, str]:
+    """definition key -> the base YAML's ``name:`` field (overlay ``extends`` target)."""
+    global _BASE_NAMES
+    if _BASE_NAMES is None:
+        _BASE_NAMES = {
+            key: (overlay_mod.load_yaml(definition_path(key)) or {}).get("name", key)
+            for key in DEFINITION_FILES
+        }
+    return _BASE_NAMES
+
+
+def route_overlays(overlay_paths: list[str | Path] | None) -> dict[str, list[str | Path]]:
+    """Partition overlay files by the definition their ``extends`` targets.
+
+    Commands that load several definitions at once (tabletop / render-runbook /
+    list-definitions) must not apply every ``--overlay`` to every base — a
+    responsibility overlay would then be rejected while loading scenarios. This
+    routes each overlay to its own base, preserving the given order per base.
+    An ``extends`` that matches no base definition is an input error (CLI exit
+    3), never silently dropped. Single-definition commands keep passing their
+    overlay list straight to :func:`load`, so a mismatched overlay there stays
+    a hard error.
+    """
+    routed: dict[str, list[str | Path]] = {key: [] for key in DEFINITION_FILES}
+    if not overlay_paths:
+        return routed
+    key_by_base = {base: key for key, base in base_names().items()}
+    for path in overlay_paths:
+        extends = (overlay_mod.load_yaml(path) or {}).get("extends")
+        key = key_by_base.get(extends)
+        if key is None:
+            raise ValueError(
+                f"overlay '{path}' extends unknown definition '{extends}' "
+                f"(known: {', '.join(sorted(key_by_base))})"
+            )
+        routed[key].append(path)
+    return routed
+
+
 def load(
     name: str,
     overlay_paths: list[str | Path] | None = None,

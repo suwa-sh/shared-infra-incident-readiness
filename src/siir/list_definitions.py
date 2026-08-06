@@ -28,12 +28,12 @@ _PRIMARY_GROUP = {
 
 def summarize(overlay_paths: list[str | Path] | None = None) -> list[dict]:
     summaries = []
+    # Route each overlay to the base its `extends` targets. An overlay that
+    # matches no base raises (input error) instead of being silently dropped —
+    # the old fallback showed the base and exited 0, hiding the mistake.
+    routed = defn_mod.route_overlays(overlay_paths)
     for name, (group_key, role_group_key) in _PRIMARY_GROUP.items():
-        # overlays only apply to the base they `extends`; skip mismatches silently.
-        try:
-            defn = defn_mod.load(name, overlay_paths=overlay_paths)
-        except OverlayError:
-            defn = defn_mod.load(name)  # show base on mismatch
+        defn = defn_mod.load(name, overlay_paths=routed[name])
         sep = overlay_mod.separator_of(defn)
         groups = overlay_mod.group_items(defn)
         leaves = groups.get(group_key, {}).get("leaves", [])

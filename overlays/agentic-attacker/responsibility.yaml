@@ -1,0 +1,62 @@
+# 公式 overlay: agentic-attacker readiness — 責任境界表への追加 5 項目。
+#
+# 出典: Hugging Face のセキュリティインシデント一次報告 (2026-07-16 公開,
+# https://huggingface.co/blog/security-incident-july-2026)。攻撃が端から端まで
+# 自律 AI エージェントで駆動された初の公開事例から、「人間の攻撃者」を暗黙の
+# 前提とした既存 readiness では測れない 4 次元を、防御側の責任項目として足す。
+# 攻撃手順は扱わない。
+#
+# 4 次元と項目の対応:
+#   次元1 機械速度の初動        -> RB20
+#   次元2 フォレンジック基盤の主権 -> RB21 (基盤準備) / RB22 (データ越境統制)
+#   次元3 権限境界の連鎖         -> RB23
+#   次元4 手薄時間帯の初動 SLA   -> RB24
+#
+# id は RB20 番台を使う (RB01-12 は正本、RB13 は examples/overlays/sample-company
+# が使用済み。併用時の add 衝突を避ける)。
+#
+# 採点の意味: siir の check-responsibility は「その責任の owner が明確か」を
+# 採点する (能力・基盤の有無そのものは採点しない)。tbd は「owner 未確定」を表す。
+# 能力の準備状況 (検証日・切替所要時間など) は Tabletop シナリオの証跡確認
+# 設問で扱う (overlays/agentic-attacker/scenarios.yaml)。
+extends: shared-infra-responsibility-matrix
+add:
+  - id: resp.RB20
+    text: 機械速度攻撃の検知・一次トリアージ自動化 (AIトリアージ基盤) の整備・運用
+    note: >-
+      自律エージェント型攻撃は短命サンドボックス群で数千アクション・1万件超の
+      イベントを生み、人手の一次トリアージは物理的に不可能になる。
+      検知シグナルの相関と一次分類を自動化する基盤の owner を決めておく。
+    recommended: {principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
+  - id: resp.RB21
+    text: 有事フォレンジック解析基盤 (攻撃者アーティファクトを投入できる解析環境) の平時準備・維持
+    note: >-
+      商用 AI API の安全ガードレールは「インシデント対応者」と「攻撃者」を
+      区別できず、攻撃コマンド・エクスプロイト・C2 アーティファクトを含む正当な
+      解析要求をブロックし得る。商用ガードレールに依存しない解析基盤
+      (例: オープンウェイトモデルの自社インフラ運用) を平時に検証しておく
+      責任の owner を決める。tbd は「準備・維持の owner が未確定」を表す
+      (基盤・能力の有無の採点ではない)。
+    recommended: {principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
+  - id: resp.RB22
+    text: 有事解析データの越境統制 (攻撃者データ・認証情報断片を契約で承認されたフォレンジック処理境界の外に出さない)
+    note: >-
+      解析ログには窃取された認証情報の断片が含まれ、外部送信は二次漏洩リスクに
+      なる。「境界の外」にはホステッドモデル提供者へのプロンプト送信も含む。
+      推奨は解析環境と認証情報を実際に管理する OEM 運用者を R/A とするが、
+      委託構成 (委託元が解析を主管する場合など) によっては委託元ISPが A になり得る。
+    recommended: {principal_isp: C, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
+  - id: resp.RB23
+    text: ワーカー/テナント単位の権限境界 (侵害の封じ込め設計) の維持・検証
+    note: >-
+      1 ワーカーのコード実行がノード権限昇格 → 認証情報窃取 → クラスタ間
+      横移動に連鎖しない設計 (隔離実行・admission control・短命限定スコープ
+      トークン・セグメンテーション) を維持・検証する責任の owner を決める。
+    recommended: {principal_isp: C, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
+  - id: resp.RB24
+    text: 曜日・時間帯によらない重大シグナルの即時ページング体制
+    note: >-
+      横移動は検知・対応要員が手薄な週末をまたいで進行した実例がある。
+      重大シグナルを曜日・時間帯を問わず数分以内に担当者へページングする体制
+      (オンコール二重化・週末の閾値調整を含む) の owner を決める。
+    recommended: {principal_isp: I, oem_operator: "R/A", ops_bpo: R, sw_vendor: I}

@@ -60,11 +60,12 @@ def build(
     scenario_id: str,
     overlay_paths: list[str | Path] | None = None,
 ) -> RunbookModel:
-    resp = defn_mod.load("responsibility-matrix", overlay_paths=overlay_paths)
-    raci = defn_mod.load("incident-raci", overlay_paths=overlay_paths)
-    ob_defn = defn_mod.load("notification-obligations", overlay_paths=overlay_paths)
-    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=overlay_paths)
-    sc_defn = defn_mod.load("scenarios", overlay_paths=overlay_paths)
+    routed = defn_mod.route_overlays(overlay_paths)
+    resp = defn_mod.load("responsibility-matrix", overlay_paths=routed["responsibility-matrix"])
+    raci = defn_mod.load("incident-raci", overlay_paths=routed["incident-raci"])
+    ob_defn = defn_mod.load("notification-obligations", overlay_paths=routed["notification-obligations"])
+    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=routed["dpa-clauses"])
+    sc_defn = defn_mod.load("scenarios", overlay_paths=routed["scenarios"])
 
     resp_sep = overlay_mod.separator_of(resp)
     resp_items = overlay_mod.group_items(resp).get("resp", {}).get("leaves", [])

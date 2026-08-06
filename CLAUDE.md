@@ -17,6 +17,7 @@
 | 種類 | 正本パス | 役割 |
 |---|---|---|
 | 責任境界表 / RACI / シナリオ | `definitions/*.yaml` | 構造的正本 |
+| 公式 overlay(脅威モデル拡張) | `overlays/<name>/*.yaml` | 公式配布の追加次元(例: `agentic-attacker`)。`examples/overlays/` は各社が真似るサンプルで別物 |
 | 契約 SLA(24h/72h) | `definitions/dpa-clauses.yaml` | 契約上の通知 SLA の正本 |
 | 法令・規制の通知期限 | `definitions/notification-obligations.yaml` | 法令クロックの正本 |
 | インシデント記録契約 | `schemas/incident-record.schema.json` | JSON Schema 契約正本 |
@@ -39,6 +40,10 @@
 違反は `bin/siir check-overlay <path>` で即検出(exit 2)。**変更を加えるときは必ず `check-overlay` を回す**。
 
 複数 overlay は `--overlay` の指定順に逐次適用し、**各 overlay は適用時点の結果より厳格でなければならない**(strictest-wins ではなく順序依存)。例: 24→12→18 は最後で却下される。最も厳しい値を最後に積むのではなく、単調に厳しくする順で並べる。
+
+### overlay ルーティング(複数定義コマンド)
+
+複数の定義を同時に読むコマンド(`tabletop` / `render-runbook` / `list-definitions`)は、`definitions.route_overlays()` が各 overlay の `extends` を見て**適用先の定義へ振り分ける**。どの定義にも一致しない `extends` は入力エラー(exit 3)でありサイレントに捨てない。単一定義コマンド(`check-responsibility` / `check-dpa` / `validate-record`)はルーティングせず、不一致 overlay を渡したら明示エラーにする(従来どおり)。
 
 ### `extension_points` 宣言と実装の同期義務
 

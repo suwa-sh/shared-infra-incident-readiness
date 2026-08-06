@@ -1,0 +1,16 @@
+# 公式 overlay: agentic-attacker readiness — 初動 RACI への追加 3 活動。
+#
+# 出典と 4 次元の背景は responsibility.yaml のヘッダを参照。
+# ここは初動の「具体活動」を足し、render-runbook の Stage 2 に反映させる。
+# id は AC16 番台 (AC01-15 は正本が使用)。
+extends: shared-infra-incident-raci
+add:
+  - id: raci_act.AC16
+    text: AI一次トリアージによる行動ログの自動分類
+    cells: {end_user: "-", principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
+  - id: raci_act.AC17
+    text: 主権フォレンジック基盤への切替・起動 (商用APIが解析を拒否した場合)
+    cells: {end_user: "-", principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
+  - id: raci_act.AC18
+    text: 認証情報の一括失効・予防的広範ローテーション
+    cells: {end_user: I, principal_isp: C, oem_operator: "R/A", ops_bpo: R, sw_vendor: I}

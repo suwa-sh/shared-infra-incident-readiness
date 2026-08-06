@@ -193,6 +193,27 @@ siir check-dpa my-dpa.yaml --overlay my-overlay.yaml
 
 overlay が `add`(追加)/ `strengthen`(厳格化)のルールを満たせば `[OK]`、違反すれば `[NG]` と理由を返します。検証を通った overlay を `--overlay` で各コマンドに適用します。
 
+## 公式 overlay — AI 攻撃者 readiness(agentic-attacker)
+
+自作 overlay のほかに、公式配布の overlay を [`overlays/`](overlays/) に同梱しています。`overlays/agentic-attacker/` は、自律 AI エージェントが駆動した実際の侵入事案(Hugging Face、2026-07-16 公開)から抽出した 4 次元 — 機械速度の初動 / フォレンジック基盤の主権 / 権限境界の連鎖 / 手薄時間帯の初動 SLA — を、責任項目 5 件・初動活動 3 件・Tabletop シナリオ 1 本として診断に追加します。
+
+ソース checkout ではリポジトリ直下から相対パスで指定します。
+
+```bash
+siir check-responsibility my-answers.yaml \
+  --overlay overlays/agentic-attacker/responsibility.yaml
+```
+
+Docker では同梱 overlay はイメージ内の `/app` 配下にあります(自組織の answers は `/data` にマウント)。
+
+```bash
+docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness \
+  check-responsibility /data/my-answers.yaml \
+  --overlay /app/overlays/agentic-attacker/responsibility.yaml
+```
+
+詳細は [`docs/06_agentic_attacker_overlay.md`](docs/06_agentic_attacker_overlay.md) を参照してください。
+
 ## 誰のためのものか
 
 | あなたが… | ここから |

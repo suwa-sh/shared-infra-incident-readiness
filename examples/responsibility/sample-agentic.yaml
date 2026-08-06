@@ -1,0 +1,31 @@
+# agentic-attacker overlay を当てた記入例。
+#
+# ベースは examples/saas-operator/saas-operator-delegation.yaml (全12項目 PASS の
+# 良い記入例)。そこへ overlay の RB20-RB24 の回答を足した 17 項目版。
+# わざと RB21 (主権フォレンジック解析基盤の平時準備) だけを「都度協議 (tbd)」に
+# 残してある — 商用 AI のガードレールが有事の解析を拒む「非対称性問題」は
+# 最も新しく、owner が未確定のままになりがちな典型ギャップのため。
+#
+# 実行例 (この 1 項目が gray になり、結論 REVISE / exit 1 を示す):
+#   bin/siir check-responsibility examples/responsibility/sample-agentic.yaml \
+#     --overlay overlays/agentic-attacker/responsibility.yaml
+target: マーケ自動化運用者 (顧客 / 運用者 / SaaS の三層) + AI攻撃者 readiness
+matrix:
+  RB01: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }
+  RB02: { principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  RB03: { principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I }
+  RB04: { principal_isp: C, oem_operator: A, ops_bpo: I, sw_vendor: I }
+  RB05: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C }
+  RB06: { principal_isp: C, oem_operator: A, ops_bpo: C, sw_vendor: R }
+  RB07: { principal_isp: I, oem_operator: R, ops_bpo: C, sw_vendor: A }
+  RB08: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C }
+  RB09: { principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C }
+  RB10: { principal_isp: R, oem_operator: C, ops_bpo: C, sw_vendor: C }
+  RB11: { principal_isp: A, oem_operator: R, ops_bpo: C, sw_vendor: I }
+  RB12: { principal_isp: C, oem_operator: A, ops_bpo: C, sw_vendor: I }
+  # --- agentic-attacker overlay (RB20-RB24) ---
+  RB20: { principal_isp: I, oem_operator: A, ops_bpo: R, sw_vendor: I }
+  RB21: { principal_isp: I, oem_operator: tbd, ops_bpo: C, sw_vendor: I }   # 主権解析基盤の owner が未確定 → gray
+  RB22: { principal_isp: C, oem_operator: A, ops_bpo: R, sw_vendor: I }
+  RB23: { principal_isp: C, oem_operator: A, ops_bpo: R, sw_vendor: I }
+  RB24: { principal_isp: I, oem_operator: A, ops_bpo: R, sw_vendor: I }

@@ -32,7 +32,8 @@ def build(
     answers_path: str | Path | None = None,
     overlay_paths: list[str | Path] | None = None,
 ) -> TabletopModel:
-    sc_defn = defn_mod.load("scenarios", overlay_paths=overlay_paths)
+    routed = defn_mod.route_overlays(overlay_paths)
+    sc_defn = defn_mod.load("scenarios", overlay_paths=routed["scenarios"])
     sc_sep = overlay_mod.separator_of(sc_defn)
     scenarios = {
         defn_mod.local_id(s["id"], sc_sep): dict(s, id=defn_mod.local_id(s["id"], sc_sep))
@@ -42,7 +43,7 @@ def build(
         raise KeyError(f"unknown scenario '{scenario_id}'")
     scenario = scenarios[scenario_id]
 
-    resp = defn_mod.load("responsibility-matrix", overlay_paths=overlay_paths)
+    resp = defn_mod.load("responsibility-matrix", overlay_paths=routed["responsibility-matrix"])
     resp_sep = overlay_mod.separator_of(resp)
     resp_groups = overlay_mod.group_items(resp)
     item_by_id = {defn_mod.local_id(i["id"], resp_sep): i for i in resp_groups.get("resp", {}).get("leaves", [])}

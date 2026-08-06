@@ -129,6 +129,33 @@ Conclusion: BLOCK
 See [`README.ja.md`](README.ja.md#使い方想定ワークフロー) for sample output of every
 command in the workflow.
 
+## Official overlay — agentic-attacker readiness
+
+Besides your own overlays, the repo ships an official one under
+[`overlays/`](overlays/). `overlays/agentic-attacker/` distils four dimensions
+from a real incident driven end-to-end by an autonomous AI agent (Hugging Face,
+disclosed 2026-07-16) — machine-speed triage, forensic-platform sovereignty,
+privilege-boundary chaining, and off-hours paging SLA — into 5 responsibility
+items, 3 initial-response activities, and 1 Tabletop scenario.
+
+From a source checkout, reference it with repo-relative paths:
+
+```bash
+siir check-responsibility my-answers.yaml \
+  --overlay overlays/agentic-attacker/responsibility.yaml
+```
+
+With Docker, the bundled overlays live under `/app` inside the image (your own
+answers are mounted at `/data`):
+
+```bash
+docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness \
+  check-responsibility /data/my-answers.yaml \
+  --overlay /app/overlays/agentic-attacker/responsibility.yaml
+```
+
+See [`docs/06_agentic_attacker_overlay.md`](docs/06_agentic_attacker_overlay.md) for details.
+
 ## Who this is for
 
 | If you are... | Start with... |
@@ -149,6 +176,7 @@ shared-infra-incident-readiness/
 │   ├── notification-obligations.yaml   # statutory notification clocks
 │   └── scenarios.yaml                  # Tabletop scenarios
 ├── schemas/incident-record.schema.json # incident record + notification timeline
+├── overlays/                           # official overlays (e.g. agentic-attacker)
 ├── bin/siir + src/siir/                # the CLI
 ├── examples/                           # sample inputs, overlays, worked example, agent skills
 ├── docs/                               # design docs (C4, concept model, scoring)
