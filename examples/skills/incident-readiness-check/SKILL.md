@@ -20,12 +20,19 @@ readable summary plus the first gap to fix.
 
 ## Workflow
 
-0. Decide the overlay list first, and use the SAME list (same order) in every
-   step below. Overlays add items, so discovering questions from the base
-   definition while scoring with an overlay would silently skip the added
-   items (e.g. RB20-RB24 from `overlays/agentic-attacker/responsibility.yaml`,
-   the bundled official overlay). Validate each overlay with
-   `bin/siir check-overlay <path>` before use.
+0. Decide the ordered overlay list first. Overlays add items, so discovering
+   questions from the base definition while scoring with an overlay would
+   silently skip the added items (e.g. RB20-RB24 from
+   `overlays/agentic-attacker/responsibility.yaml`, the bundled official
+   overlay). Validate each overlay with `bin/siir check-overlay <path>`.
+   How to pass the list differs by command kind:
+   - multi-definition commands (`list-definitions`, `render-runbook`,
+     `tabletop`) accept the FULL list — they route each overlay to the
+     definition its `extends` targets;
+   - single-definition commands (`check-responsibility`, `check-dpa`,
+     `validate-record`) must receive only the SUBSET whose `extends` matches
+     that command's definition (keep the relative order). Passing an
+     unrelated overlay there is a hard error (exit 3), by design.
 
 1. Read the effective (overlay-applied) definition — not the base file — to
    retrieve the items and roles:
@@ -47,12 +54,14 @@ readable summary plus the first gap to fix.
      ...
    ```
 
-4. Run `bin/siir check-responsibility <tmp.yaml> --format json` with the same
-   `--overlay <path>` list (same order) chosen in step 0. Capture stdout and
-   the exit code.
+4. Run `bin/siir check-responsibility <tmp.yaml> --format json` with the
+   responsibility-matrix subset of the step-0 list (`extends:
+   shared-infra-responsibility-matrix`, relative order preserved). Capture
+   stdout and the exit code.
 
 5. Optionally gather DPA clause coverage and run
-   `bin/siir check-dpa <dpa.yaml> --format json`.
+   `bin/siir check-dpa <dpa.yaml> --format json` with the dpa-clauses subset
+   of the step-0 list (if any).
 
 6. Translate the JSON: lead with the conclusion (PASS / REVISE / BLOCK), then
    list the items that are `block` (unassigned / no accountable / split A) and

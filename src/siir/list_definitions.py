@@ -54,7 +54,7 @@ def summarize(overlay_paths: list[str | Path] | None = None) -> list[dict]:
 
 def check_overlay(overlay_path: str | Path) -> overlay_mod.MergeResult:
     """Validate an overlay against whichever base it declares via ``extends``."""
-    ov = overlay_mod.load_yaml(overlay_path)
+    ov = defn_mod.load_overlay_mapping(overlay_path)
     extends = ov.get("extends")
     base = None
     for name in defn_mod.DEFINITION_FILES:

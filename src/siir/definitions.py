@@ -50,6 +50,20 @@ def local_id(item_id: str, sep: str) -> str:
     return item_id.split(sep, 1)[1] if sep in item_id else item_id
 
 
+def load_overlay_mapping(path: str | Path) -> dict:
+    """Load an overlay file, requiring a top-level YAML mapping.
+
+    A top-level list/scalar would AttributeError deeper in the engine and leak
+    exit 1; the CLI contract wants structural input errors as exit 3
+    (ValueError). Shared by route_overlays, load and check-overlay so every
+    overlay-reading path enforces the same shape.
+    """
+    ov = overlay_mod.load_yaml(path)
+    if not isinstance(ov, dict):
+        raise ValueError(f"overlay '{path}' must be a YAML mapping with an 'extends' field")
+    return ov
+
+
 _BASE_NAMES: dict[str, str] | None = None
 
 
@@ -81,14 +95,7 @@ def route_overlays(overlay_paths: list[str | Path] | None) -> dict[str, list[str
         return routed
     key_by_base = {base: key for key, base in base_names().items()}
     for path in overlay_paths:
-        ov = overlay_mod.load_yaml(path)
-        if not isinstance(ov, dict):
-            # a top-level list/scalar would AttributeError below and leak exit 1;
-            # the CLI contract wants structural input errors as exit 3 (ValueError)
-            raise ValueError(
-                f"overlay '{path}' must be a YAML mapping with an 'extends' field"
-            )
-        extends = ov.get("extends")
+        extends = load_overlay_mapping(path).get("extends")
         key = key_by_base.get(extends)
         if key is None:
             raise ValueError(
@@ -110,6 +117,8 @@ def load(
     overlay_paths = overlay_paths or []
     if not overlay_paths:
         return base
+    for ov_path in overlay_paths:
+        load_overlay_mapping(ov_path)  # structural check first (exit 3, not AttributeError)
     result = overlay_mod.apply_overlays(base, overlay_paths)
     if not result.ok:
         raise OverlayError(result.violations)

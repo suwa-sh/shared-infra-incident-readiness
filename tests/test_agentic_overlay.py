@@ -184,13 +184,39 @@ def test_cli_list_definitions_unknown_extends_exits_3(tmp_path):
         ["list-definitions"],
         ["tabletop", "--scenario", "rce-6brand"],
         ["render-runbook", "REPLACE_ANSWERS", "--scenario", "rce-6brand"],
+        ["check-responsibility", "REPLACE_ANSWERS"],
     ],
-    ids=["list-definitions", "tabletop", "render-runbook"],
+    ids=["list-definitions", "tabletop", "render-runbook", "check-responsibility"],
 )
 def test_cli_non_mapping_overlay_exits_3(tmp_path, argv_head):
     # トップレベルが list の overlay は構造エラー (exit 3)。AttributeError で
-    # exit 1 に漏れない (レビュー指摘: route_overlays の mapping 検証)
+    # exit 1 に漏れない (レビュー指摘: 全 overlay 読込経路の mapping 検証)
     bad = tmp_path / "bad-list.yaml"
     bad.write_text("- not-a-mapping\n", encoding="utf-8")
     argv = [str(ANSWERS) if a == "REPLACE_ANSWERS" else a for a in argv_head]
     assert _run(argv + ["--overlay", str(bad)]) == 3
+
+
+def test_cli_check_overlay_non_mapping_exits_3(tmp_path):
+    bad = tmp_path / "bad-list.yaml"
+    bad.write_text("- not-a-mapping\n", encoding="utf-8")
+    assert _run(["check-overlay", str(bad)]) == 3
+
+
+def test_tabletop_ac_sole_responsible_shown_as_owner(tmp_path):
+    # 正本 AC11 (フォレンジック開始) は oem_operator: R のみで A 無し。
+    # RB と同じ resolver で「<role> (R)」表示になること (未割当と出さない)
+    ov = tmp_path / "focus-ac11.yaml"
+    ov.write_text(
+        "extends: shared-infra-tabletop-scenarios\n"
+        "add:\n"
+        "  - id: scenarios.ac11-drill\n"
+        "    title: AC11 drill\n"
+        "    focus_items: [AC11]\n",
+        encoding="utf-8",
+    )
+    model = tabletop.build("ac11-drill", overlay_paths=[ov])
+    (ac11,) = model.focus
+    assert ac11["text"]
+    assert "(R)" in ac11["owner"]
+    assert "未割当" not in ac11["owner"]

@@ -27,6 +27,21 @@ class TabletopModel:
     target: str | None = None
 
 
+def _owner_label(cells: dict, names: dict[str, str]) -> str:
+    """Accountable roles; else a sole Responsible as ``<name> (R)``; else 未割当.
+
+    check-responsibility treats a sole R (no A) as a clear owner, so the
+    exercise view must not render that same row as unassigned. Applied to both
+    RB (responsibility) and AC (RACI activity) focus refs.
+    """
+    acc = [names.get(r, r) for r, v in cells.items() if "A" in cr._cell_letters(v)]
+    resp_roles = [names.get(r, r) for r, v in cells.items() if "R" in cr._cell_letters(v)]
+    owner = ", ".join(acc)
+    if not owner and len(resp_roles) == 1:
+        owner = f"{resp_roles[0]} (R)"
+    return owner or "(未割当 — 演習で確定する)"
+
+
 def build(
     scenario_id: str,
     answers_path: str | Path | None = None,
@@ -76,32 +91,23 @@ def build(
         if ref in item_by_id:
             item = item_by_id[ref]
             cells = org_matrix.get(ref) or item.get("recommended", {}) or {}
-            acc = [role_names.get(r, r) for r, v in cells.items() if "A" in cr._cell_letters(v)]
-            resp_roles = [role_names.get(r, r) for r, v in cells.items() if "R" in cr._cell_letters(v)]
             gray = [role_names.get(r, r) for r, v in cells.items() if "tbd" in cr._cell_letters(v)]
-            owner = ", ".join(acc)
-            if not owner and len(resp_roles) == 1:
-                # check-responsibility は「A 無し・単独 R」を明確な owner として ok に
-                # するので、演習側も同じ行を未割当と表示しない (診断との意味論一致)
-                owner = f"{resp_roles[0]} (R)"
             focus.append(
                 {
                     "ref": ref,
                     "text": item.get("text", ""),
-                    "owner": owner or "(未割当 — 演習で確定する)",
+                    "owner": _owner_label(cells, role_names),
                     "gray": gray,
                     "source": "org" if org_matrix.get(ref) else "recommended",
                 }
             )
         elif ref in act_by_id:
             act = act_by_id[ref]
-            cells = act.get("cells", {}) or {}
-            acc = [raci_role_names.get(r, r) for r, v in cells.items() if "A" in cr._cell_letters(v)]
             focus.append(
                 {
                     "ref": ref,
                     "text": act.get("text", ""),
-                    "owner": ", ".join(acc) or "(未割当 — 演習で確定する)",
+                    "owner": _owner_label(act.get("cells", {}) or {}, raci_role_names),
                     "gray": [],
                     "source": "raci",
                 }
