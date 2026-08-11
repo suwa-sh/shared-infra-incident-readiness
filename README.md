@@ -68,6 +68,10 @@ docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
 docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 list-definitions
 ```
 
+Use `list-definitions --format json --detail` when an agent or integration
+needs the effective item text, notes, recommended cells, and role names after
+all selected overlays are applied. `--detail` is JSON-only.
+
 `--version` prints the app version and the bundled overlay engine version, e.g.
 `siir 0.2.0 (overlay-scoring-skeleton 0.1.0)`.
 
@@ -156,6 +160,29 @@ docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness 
 
 See [`docs/06_agentic_attacker_overlay.md`](docs/06_agentic_attacker_overlay.md) for details.
 
+## Official overlay — evaluation-containment readiness
+
+`overlays/evaluation-containment/` checks the organisation running a
+safety-control-reduced evaluation. It adds 7 responsibility items, 7 ordered
+initial-response activities, 4 evaluation-specific roles, a Tabletop scenario,
+and an affected-third-party communication branch. It is independent from, and
+composable with, the victim-side `agentic-attacker` overlay.
+
+Use the responsibility file alone for scoring. Use all three files when
+rendering the scenario, so responsibility owners and activity ordering are both
+resolved:
+
+```bash
+siir render-runbook examples/responsibility/sample-evaluation-containment.yaml \
+  --scenario evaluation-containment \
+  --overlay overlays/evaluation-containment/scenarios.yaml \
+  --overlay overlays/evaluation-containment/responsibility.yaml \
+  --overlay overlays/evaluation-containment/incident-raci.yaml
+```
+
+See [`docs/07_evaluation_containment_overlay.md`](docs/07_evaluation_containment_overlay.md)
+for the responsibility model, communication deadline override, and primary sources.
+
 ## Who this is for
 
 | If you are... | Start with... |
@@ -176,7 +203,7 @@ shared-infra-incident-readiness/
 │   ├── notification-obligations.yaml   # statutory notification clocks
 │   └── scenarios.yaml                  # Tabletop scenarios
 ├── schemas/incident-record.schema.json # incident record + notification timeline
-├── overlays/                           # official overlays (e.g. agentic-attacker)
+├── overlays/                           # official agentic-attacker and evaluation-containment overlays
 ├── bin/siir + src/siir/                # the CLI
 ├── examples/                           # sample inputs, overlays, worked example, agent skills
 ├── docs/                               # design docs (C4, concept model, scoring)

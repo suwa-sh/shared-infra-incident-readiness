@@ -25,11 +25,16 @@ the output is deterministic (same inputs → same Markdown), so it is reviewable
    and `list-definitions` without the overlay would not show them. Multi-
    definition commands route each overlay to the definition its `extends`
    targets, so passing all selected overlays everywhere is safe.
+   `evaluation-containment` is a three-file bundle: always include its
+   scenarios, responsibility, and incident-raci files for a runbook or
+   Tabletop. Scenario-only use cannot resolve RB30-RB36 owners or AC20-AC26
+   ordering.
 
 1. List available scenarios:
-   `bin/siir list-definitions --format json --overlay <path> ...` and read the
-   `scenarios` definition for valid `--scenario` ids (e.g. `rce-6brand`,
-   `agentic-attacker`).
+   `bin/siir list-definitions --format json --detail --overlay <path> ...` and
+   read the effective `items` from the scenarios, responsibility-matrix, and
+   incident-raci definitions. Use their item text, notes, cells, role names,
+   and scenario ids; do not hard-code descriptions or counts.
 
 2. Obtain the org's responsibility answers YAML (the same shape used by
    `incident-readiness-check`). If none exists, render against the recommended

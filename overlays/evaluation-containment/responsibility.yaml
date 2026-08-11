@@ -1,0 +1,71 @@
+# 公式 overlay: evaluation-containment readiness — 責任境界表への追加 7 項目。
+#
+# 安全制御を弱める能力評価を「実行してよいか」だけでなく、封じ込め、監視、
+# 証拠保全、外部影響の確定、第三者対応まで一続きの責任として採点する。
+# 被害を受ける側の agentic-attacker overlay とは独立して併用できる。
+#
+# 一次資料:
+# - OpenAI, model evaluation security incident (2026-07-21)
+#   https://openai.com/index/hugging-face-model-evaluation-security-incident/
+# - UK AISI, Inspect Sandboxing Toolkit
+#   https://www.aisi.gov.uk/blog/the-inspect-sandboxing-toolkit-scalable-and-secure-ai-agent-evaluations
+#
+# RB30-RB36 はこの overlay 専用とし、既存の RB01-RB24 と衝突させない。
+extends: shared-infra-responsibility-matrix
+add:
+  - id: roles.evaluation_program_owner
+    name: 評価プログラム責任者
+    name_en: Evaluation program owner
+  - id: roles.evaluation_operator
+    name: 評価実施者
+    name_en: Evaluation operator
+  - id: roles.evaluation_security_owner
+    name: 評価セキュリティ責任者
+    name_en: Evaluation security owner
+  - id: roles.external_harm_owner
+    name: 第三者対応責任者
+    name_en: External harm owner
+
+  - id: resp.RB30
+    text: 安全制御を弱める評価の開始承認
+    note: >-
+      評価目的、対象能力、弱める制御、代替する封じ込め、残余リスクを確認し、
+      実行可否を決める責任を置く。
+    recommended: {evaluation_program_owner: A, evaluation_operator: R, evaluation_security_owner: C, external_harm_owner: I}
+  - id: resp.RB31
+    text: 評価前封じ込め dossier の受入 (tooling・host・network、許可 egress、例外、依存 chokepoint)
+    note: >-
+      評価ごとの risk profile に合わせ、tooling、host、network の三軸を確認する。
+      egress を許す場合は、全経路、例外、proxy や cache などの依存 chokepoint を
+      列挙し、ゼロ経路、単一経路、複数 allowlist のいずれでも境界を明示する。
+    recommended: {evaluation_program_owner: C, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: I}
+  - id: resp.RB32
+    text: 評価中の監視、停止条件、kill authority の設定・運用
+    note: >-
+      高推論量、境界探索、想定外 egress などのシグナルと停止条件を事前に定め、
+      評価を即時停止できる権限を明示する。
+    recommended: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: "R/A", external_harm_owner: I}
+  - id: resp.RB33
+    text: 評価が生じさせた外部被害の評価実施側での封じ込め
+    note: >-
+      評価環境、認証情報、session、egress を評価実施側で止め、被害側だけに
+      封じ込めを委ねない責任を置く。
+    recommended: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  - id: resp.RB34
+    text: 評価環境の状態と調査証拠の保全
+    note: >-
+      実行環境、評価ログ、監視記録、認証情報利用、ネットワーク到達の証跡を、
+      調査可能な形で保存する責任を置く。
+    recommended: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  - id: resp.RB35
+    text: 評価に起因する外部影響範囲の確定
+    note: >-
+      到達した外部システム、利用したアカウント、閲覧・変更した情報、継続中の
+      access を確定する責任を置く。
+    recommended: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  - id: resp.RB36
+    text: 影響を受けた第三者への通知、連絡窓口の確立、共同対応の調整
+    note: >-
+      第三者対応責任者は通知、連絡、共同対応の調整を担う。
+      技術証拠の保全や開示可否の単独判断までは担わない。
+    recommended: {evaluation_program_owner: I, evaluation_operator: I, evaluation_security_owner: C, external_harm_owner: "R/A"}

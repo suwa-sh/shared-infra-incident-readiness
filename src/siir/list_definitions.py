@@ -26,7 +26,7 @@ _PRIMARY_GROUP = {
 }
 
 
-def summarize(overlay_paths: list[str | Path] | None = None) -> list[dict]:
+def summarize(overlay_paths: list[str | Path] | None = None, *, detail: bool = False) -> list[dict]:
     summaries = []
     # Route each overlay to the base its `extends` targets. An overlay that
     # matches no base raises (input error) instead of being silently dropped —
@@ -38,17 +38,21 @@ def summarize(overlay_paths: list[str | Path] | None = None) -> list[dict]:
         groups = overlay_mod.group_items(defn)
         leaves = groups.get(group_key, {}).get("leaves", [])
         roles = groups.get(role_group_key, {}).get("leaves", []) if role_group_key else []
-        summaries.append(
-            {
-                "name": defn.get("name", name),
-                "version": defn.get("version"),
-                "array": group_key,
-                "count": len(leaves),
-                "ids": [defn_mod.local_id(i["id"], sep) for i in leaves],
-                "roles": [defn_mod.local_id(r["id"], sep) for r in roles],
-                "extension_points": defn.get("extension_points", []),
-            }
-        )
+        summary = {
+            "name": defn.get("name", name),
+            "version": defn.get("version"),
+            "array": group_key,
+            "count": len(leaves),
+            "ids": [defn_mod.local_id(i["id"], sep) for i in leaves],
+            "roles": [defn_mod.local_id(r["id"], sep) for r in roles],
+            "extension_points": defn.get("extension_points", []),
+        }
+        if detail:
+            summary["items"] = [dict(item, id=defn_mod.local_id(item["id"], sep)) for item in leaves]
+            summary["role_items"] = [
+                dict(role, id=defn_mod.local_id(role["id"], sep)) for role in roles
+            ]
+        summaries.append(summary)
     return summaries
 
 

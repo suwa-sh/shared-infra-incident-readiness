@@ -130,8 +130,10 @@ def _cmd_check_overlay(args) -> int:
 
 
 def _cmd_list_definitions(args) -> int:
+    if args.detail and args.format != "json":
+        raise ValueError("list-definitions --detail requires --format json")
     try:
-        summaries = _list.summarize(overlay_paths=args.overlay)
+        summaries = _list.summarize(overlay_paths=args.overlay, detail=args.detail)
     except _defn.OverlayError as e:
         sys.stderr.write(f"[ERROR] {e}\n")
         return 3
@@ -197,6 +199,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("list-definitions", help="Inspect loaded definitions (+ overlays)")
     _add_common(p)
+    p.add_argument(
+        "--detail",
+        action="store_true",
+        help="Include effective item text, notes, cells and role names (JSON output only)",
+    )
     p.set_defaults(func=_cmd_list_definitions)
 
     return parser

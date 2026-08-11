@@ -112,7 +112,20 @@ def build(
     focus = set(scenario.get("focus_items", []))
     stage1 = [dict(item_owner[defn_mod.local_id(i["id"], resp_sep)], focus=defn_mod.local_id(i["id"], resp_sep) in focus) for i in resp_items]
     stage2 = _build_stage2(raci_activities, raci_names, obligations, clauses, focus, raci_sep)
-    stage3 = _build_stage3(item_owner, obligations)
+    communication_answers = _mapping_or_empty(
+        answers.get("communications"), "answers 'communications'"
+    )
+    scenario_branches = _list_or_empty(
+        scenario.get("communication_branches"), "scenario 'communication_branches'"
+    )
+    known_communication_ids = _known_communication_branch_ids(scenarios.values())
+    stage3 = _build_stage3(
+        item_owner,
+        obligations,
+        scenario_branches,
+        communication_answers,
+        known_communication_ids,
+    )
 
     return RunbookModel(
         target=answers.get("target", str(answers_path)),
@@ -138,9 +151,83 @@ def _activity_sla(act: dict, obligations: dict, clauses: dict) -> str | None:
     return None
 
 
+def _mapping_or_empty(value, label: str) -> dict:
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be a mapping")
+    return value
+
+
+def _list_or_empty(value, label: str) -> list:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"{label} must be a list")
+    return value
+
+
+def _index_activities(raci_activities: list[dict], sep: str) -> tuple[dict, list[str]]:
+    by_id: dict[str, dict] = {}
+    ordered_ids: list[str] = []
+    for activity in raci_activities:
+        aid = defn_mod.local_id(activity["id"], sep)
+        if aid in by_id:
+            raise ValueError(f"duplicate RACI activity id '{aid}'")
+        by_id[aid] = activity
+        ordered_ids.append(aid)
+    return by_id, ordered_ids
+
+
+def _activity_graph(by_id: dict, ordered_ids: list[str], sep: str) -> tuple[list[str], dict]:
+    roots: list[str] = []
+    children: dict[str, list[str]] = {}
+
+    for aid in ordered_ids:
+        activity = by_id[aid]
+        if "after" not in activity:
+            roots.append(aid)
+            continue
+        after = activity["after"]
+        if not isinstance(after, str) or not after.strip():
+            raise ValueError(f"RACI activity '{aid}' has a non-string or empty 'after'")
+        anchor = defn_mod.local_id(after, sep)
+        if anchor not in by_id:
+            raise ValueError(f"RACI activity '{aid}' references unknown after '{anchor}'")
+        children.setdefault(anchor, []).append(aid)
+    return roots, children
+
+
+def _order_activities(raci_activities: list[dict], sep: str) -> list[dict]:
+    """Insert activities carrying ``after`` while preserving definition order.
+
+    Base activities keep their order. Children of the same anchor keep overlay
+    order, and a child's descendants follow it. A cycle has no reachable root,
+    so the final emitted-count check detects it.
+    """
+    by_id, ordered_ids = _index_activities(raci_activities, sep)
+    roots, children = _activity_graph(by_id, ordered_ids, sep)
+
+    result: list[dict] = []
+    emitted: set[str] = set()
+
+    def emit(aid: str) -> None:
+        result.append(by_id[aid])
+        emitted.add(aid)
+        for child in children.get(aid, []):
+            emit(child)
+
+    for aid in roots:
+        emit(aid)
+    if len(emitted) != len(by_id):
+        unresolved = next(aid for aid in ordered_ids if aid not in emitted)
+        raise ValueError(f"RACI activity after cycle includes '{unresolved}'")
+    return result
+
+
 def _build_stage2(raci_activities: list[dict], names: dict[str, str], obligations: dict, clauses: dict, focus: set, sep: str) -> list[dict]:
     stage2 = []
-    for act in raci_activities:
+    for act in _order_activities(raci_activities, sep):
         aid = defn_mod.local_id(act["id"], sep)
         cells = act.get("cells", {})
         stage2.append(
@@ -156,7 +243,13 @@ def _build_stage2(raci_activities: list[dict], names: dict[str, str], obligation
     return stage2
 
 
-def _build_stage3(item_owner: dict, obligations: dict) -> list[dict]:
+def _build_stage3(
+    item_owner: dict,
+    obligations: dict,
+    scenario_branches: list[dict],
+    communication_answers: dict,
+    known_communication_ids: set[str],
+) -> list[dict]:
     def owner_label(item_id: str) -> str:
         o = item_owner.get(item_id, {})
         acc = ", ".join(o.get("accountable", [])) or "(未割当)"
@@ -166,12 +259,89 @@ def _build_stage3(item_owner: dict, obligations: dict) -> list[dict]:
     def ob_text(ob_id: str) -> str:
         return obligations.get(ob_id, {}).get("duration_text", "")
 
-    return [
+    branches = [
         {"audience": "利用者 (本人通知)", "ref": "RB01 / OB04", "owner": owner_label("RB01"), "deadline": ob_text("OB04")},
         {"audience": "報道 (プレスリリース)", "ref": "RB04", "owner": owner_label("RB04"), "deadline": "共同 / 個別を Accountable が即決"},
         {"audience": "個情委 (速報→確報)", "ref": "RB02 / OB01・OB02", "owner": owner_label("RB02"), "deadline": f"{ob_text('OB01')} → {ob_text('OB02')}"},
         {"audience": "総務省 (重大事故報告)", "ref": "RB03 / OB03", "owner": owner_label("RB03"), "deadline": ob_text("OB03")},
     ]
+    branch_ids: set[str] = set()
+    for branch in scenario_branches:
+        branch_id, rendered_branch = _build_scenario_branch(
+            branch, item_owner, communication_answers, owner_label
+        )
+        if branch_id in branch_ids:
+            raise ValueError(f"duplicate scenario communication branch id '{branch_id}'")
+        branch_ids.add(branch_id)
+        branches.append(rendered_branch)
+    if known_communication_ids:
+        unknown_answer_ids = set(communication_answers) - known_communication_ids
+        if unknown_answer_ids:
+            unknown = ", ".join(sorted(str(item) for item in unknown_answer_ids))
+            raise ValueError(f"unknown communication answer id(s): {unknown}")
+    return branches
+
+
+def _known_communication_branch_ids(scenarios) -> set[str]:
+    ids: set[str] = set()
+    for scenario in scenarios:
+        branches = _list_or_empty(
+            scenario.get("communication_branches"),
+            f"scenario '{scenario.get('id', '?')}' communication_branches",
+        )
+        for branch in branches:
+            if not isinstance(branch, dict):
+                raise ValueError("scenario communication branch must be a mapping")
+            branch_id = _string_field(
+                branch, "id", "scenario communication branch", required=True
+            )
+            ids.add(branch_id)
+    return ids
+
+
+def _build_scenario_branch(
+    branch, item_owner: dict, communication_answers: dict, owner_label
+) -> tuple[str, dict]:
+    if not isinstance(branch, dict):
+        raise ValueError("scenario communication branch must be a mapping")
+    branch_id = _string_field(branch, "id", "scenario communication branch", required=True)
+    label = f"communication branch '{branch_id}'"
+    answer = _mapping_or_empty(
+        communication_answers.get(branch_id), f"communication answer '{branch_id}'"
+    )
+    responsibility_ref = _string_field(
+        branch, "responsibility_ref", label, required=True
+    )
+    if responsibility_ref not in item_owner:
+        raise ValueError(
+            f"communication branch '{branch_id}' references unknown responsibility "
+            f"'{responsibility_ref}'"
+        )
+    scenario_deadline = _string_field(branch, "deadline", label)
+    answer_deadline = _string_field(
+        answer, "deadline", f"communication answer '{branch_id}'"
+    )
+    return branch_id, {
+        "id": branch_id,
+        "audience": _string_field(branch, "audience", label) or branch_id,
+        "ref": responsibility_ref,
+        "owner": owner_label(responsibility_ref),
+        "deadline": answer_deadline or scenario_deadline or "未確定 (演習で決定)",
+        "trigger": _string_field(branch, "trigger", label),
+        "message_boundary": _string_field(branch, "message_boundary", label),
+        "source": "org" if answer_deadline else "scenario",
+    }
+
+
+def _string_field(mapping: dict, field: str, label: str, *, required: bool = False) -> str:
+    value = mapping.get(field)
+    if value is None:
+        if required:
+            raise ValueError(f"{label} requires a non-empty string '{field}'")
+        return ""
+    if not isinstance(value, str) or (required and not value.strip()):
+        raise ValueError(f"{label} field '{field}' must be a string")
+    return value
 
 
 def render_text(model: RunbookModel) -> str:
@@ -203,9 +373,15 @@ def render_text(model: RunbookModel) -> str:
             f"{', '.join(a['responsible']) or '-'} | {a['sla'] or '-'} |"
         )
     lines += ["", "## Stage 3. Communication Tree (誰がいつ何を言うか)", ""]
-    lines += ["| 宛先 | 参照 | 主体 | 期限 |", "|---|---|---|---|"]
+    lines += [
+        "| 宛先 | 参照 | 主体 | 期限 | 発火条件 | 伝える範囲 |",
+        "|---|---|---|---|---|---|",
+    ]
     for b in model.stage3_branches:
-        lines.append(f"| {b['audience']} | {b['ref']} | {b['owner']} | {b['deadline'] or '-'} |")
+        lines.append(
+            f"| {b['audience']} | {b['ref']} | {b['owner']} | {b['deadline'] or '-'} | "
+            f"{b.get('trigger') or '-'} | {b.get('message_boundary') or '-'} |"
+        )
     lines.append("")
     return "\n".join(lines)
 

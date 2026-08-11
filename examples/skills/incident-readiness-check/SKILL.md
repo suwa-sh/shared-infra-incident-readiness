@@ -22,9 +22,12 @@ readable summary plus the first gap to fix.
 
 0. Decide the ordered overlay list first. Overlays add items, so discovering
    questions from the base definition while scoring with an overlay would
-   silently skip the added items (e.g. RB20-RB24 from
-   `overlays/agentic-attacker/responsibility.yaml`, the bundled official
-   overlay). Validate each overlay with `bin/siir check-overlay <path>`.
+   silently skip the added items (e.g. RB20-RB24 from `agentic-attacker` or
+   RB30-RB36 from `evaluation-containment`, the bundled official overlays).
+   Treat `evaluation-containment` as a three-file bundle for multi-definition
+   workflows; selecting only its scenario leaves the added owners and ordered
+   response activities unresolved. Validate each overlay with
+   `bin/siir check-overlay <path>`.
    How to pass the list differs by command kind:
    - multi-definition commands (`list-definitions`, `render-runbook`,
      `tabletop`) accept the FULL list — they route each overlay to the
@@ -36,9 +39,11 @@ readable summary plus the first gap to fix.
 
 1. Read the effective (overlay-applied) definition — not the base file — to
    retrieve the items and roles:
-   `bin/siir list-definitions --format json --overlay <path> ...` and take the
-   `ids` of the responsibility-matrix entry. Do not hard-code item lists; the
-   base alone has 12 items, but overlays extend it.
+   `bin/siir list-definitions --format json --detail --overlay <path> ...` and
+   take `items` and `role_items` from the responsibility-matrix entry. Use each
+   effective item's `text`, `note`, `recommended`, and role names when asking
+   questions. Do not hard-code item text, role lists, or counts; overlays extend
+   all of them.
 
 2. For each item (including overlay-added ones), ask who is Accountable /
    Responsible / Consulted / Informed. Where the org genuinely has not

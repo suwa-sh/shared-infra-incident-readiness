@@ -1,0 +1,31 @@
+# evaluation-containment overlay を使う架空の記入例。
+#
+# ベース 12 項目と agentic-attacker 5 項目は PASS にし、評価実施側の RB36 だけを
+# tbd に残す。evaluation-containment 単独でも、agentic-attacker と併用しても、
+# 意図した 1 項目だけが REVISE になる。
+target: 架空の Frontier Evaluation Lab
+matrix:
+  RB01: {principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I}
+  RB02: {principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I}
+  RB03: {principal_isp: A, oem_operator: R, ops_bpo: I, sw_vendor: I}
+  RB04: {principal_isp: C, oem_operator: A, ops_bpo: I, sw_vendor: I}
+  RB05: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  RB06: {principal_isp: C, oem_operator: A, ops_bpo: C, sw_vendor: R}
+  RB07: {principal_isp: I, oem_operator: R, ops_bpo: C, sw_vendor: A}
+  RB08: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: C}
+  RB09: {principal_isp: C, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  RB10: {principal_isp: R, oem_operator: C, ops_bpo: C, sw_vendor: I}
+  RB11: {principal_isp: A, oem_operator: R, ops_bpo: C, sw_vendor: I}
+  RB12: {principal_isp: C, oem_operator: A, ops_bpo: C, sw_vendor: C}
+  RB20: {principal_isp: I, oem_operator: A, ops_bpo: R, sw_vendor: I}
+  RB21: {principal_isp: I, oem_operator: A, ops_bpo: R, sw_vendor: I}
+  RB22: {principal_isp: C, oem_operator: A, ops_bpo: R, sw_vendor: I}
+  RB23: {principal_isp: C, oem_operator: A, ops_bpo: R, sw_vendor: I}
+  RB24: {principal_isp: I, oem_operator: A, ops_bpo: R, sw_vendor: I}
+  RB30: {evaluation_program_owner: A, evaluation_operator: R, evaluation_security_owner: C, external_harm_owner: I}
+  RB31: {evaluation_program_owner: C, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: I}
+  RB32: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: "R/A", external_harm_owner: I}
+  RB33: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  RB34: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  RB35: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  RB36: {evaluation_program_owner: I, evaluation_operator: I, evaluation_security_owner: C, external_harm_owner: tbd}

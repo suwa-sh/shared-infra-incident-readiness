@@ -1,0 +1,43 @@
+# 公式 overlay: evaluation-containment readiness — 初動 RACI への追加 7 活動。
+#
+# `after` は正本アクティビティまたは先行 overlay アクティビティの直後へ挿入する。
+# これにより封じ込め連鎖と第三者対応連鎖を、既存 Day 0-3 の流れに接続する。
+extends: shared-infra-incident-raci
+add:
+  - id: raci_roles.evaluation_program_owner
+    name: 評価プログラム責任者
+  - id: raci_roles.evaluation_operator
+    name: 評価実施者
+  - id: raci_roles.evaluation_security_owner
+    name: 評価セキュリティ責任者
+  - id: raci_roles.external_harm_owner
+    name: 第三者対応責任者
+
+  - id: raci_act.AC20
+    text: 評価の停止判断と kill authority の行使
+    after: AC02
+    cells: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: "R/A", external_harm_owner: I}
+  - id: raci_act.AC21
+    text: 評価環境からの全 egress の隔離
+    after: AC20
+    cells: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: I}
+  - id: raci_act.AC22
+    text: 評価用 token・認証情報・session の失効
+    after: AC21
+    cells: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: I}
+  - id: raci_act.AC23
+    text: 評価実行環境と監視証跡の保全
+    after: AC22
+    cells: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: I}
+  - id: raci_act.AC24
+    text: 評価に起因する第三者影響範囲の確定
+    after: AC06
+    cells: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: C}
+  - id: raci_act.AC25
+    text: 影響を受けた第三者との共同技術封じ込め
+    after: AC24
+    cells: {evaluation_program_owner: I, evaluation_operator: R, evaluation_security_owner: A, external_harm_owner: R}
+  - id: raci_act.AC26
+    text: 影響を受けた第三者への初報と連絡窓口の確立
+    after: AC25
+    cells: {evaluation_program_owner: I, evaluation_operator: I, evaluation_security_owner: C, external_harm_owner: "R/A"}

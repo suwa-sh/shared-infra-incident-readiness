@@ -41,6 +41,9 @@ docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
 
 `--version` は、アプリのバージョンと同梱の overlay エンジンのバージョンを表示します(例: `siir 0.2.0 (overlay-scoring-skeleton 0.1.0)`)。
 
+overlay 適用後の項目本文、注記、推奨セル、ロール名をエージェントや連携処理から読む場合は、`list-definitions --format json --detail` を使います。
+`--detail` は JSON 出力専用です。
+
 各コマンドは決定的な exit code を返すので、CI のゲートに使えます。
 **0** ok ・ **1** partial(黄: 警告 / 都度協議 / 未送信) ・ **2** block(欠落・条項不足・SLA 違反・overlay 却下) ・ **3** 入力エラー。
 
@@ -213,6 +216,25 @@ docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness 
 ```
 
 詳細は [`docs/06_agentic_attacker_overlay.md`](docs/06_agentic_attacker_overlay.md) を参照してください。
+
+## 公式 overlay：評価環境の封じ込め readiness
+
+`overlays/evaluation-containment/` は、安全制御を弱めた評価を実施する組織の責任を点検します。
+評価専用ロール 4 件、責任項目 7 件、順序付き初動活動 7 件、Tabletop シナリオ、影響を受けた第三者への Communication Tree 分岐を追加します。
+被害側を扱う `agentic-attacker` overlay とは独立しており、併用できます。
+
+責任境界だけを採点するときは `responsibility.yaml` を使います。
+シナリオを描画するときは、owner と初動順序を解決するため 3 ファイルをすべて指定します。
+
+```bash
+siir render-runbook examples/responsibility/sample-evaluation-containment.yaml \
+  --scenario evaluation-containment \
+  --overlay overlays/evaluation-containment/scenarios.yaml \
+  --overlay overlays/evaluation-containment/responsibility.yaml \
+  --overlay overlays/evaluation-containment/incident-raci.yaml
+```
+
+責任モデル、第三者連絡期限の保存方法、一次資料は [`docs/07_evaluation_containment_overlay.md`](docs/07_evaluation_containment_overlay.md) を参照してください。
 
 ## 誰のためのものか
 

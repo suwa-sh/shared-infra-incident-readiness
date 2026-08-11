@@ -7,10 +7,13 @@ extends: shared-infra-incident-raci
 add:
   - id: raci_act.AC16
     text: AI一次トリアージによる行動ログの自動分類
+    after: AC02
     cells: {end_user: "-", principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
   - id: raci_act.AC17
     text: 主権フォレンジック基盤への切替・起動 (商用APIが解析を拒否した場合)
+    after: AC11
     cells: {end_user: "-", principal_isp: I, oem_operator: "R/A", ops_bpo: C, sw_vendor: I}
   - id: raci_act.AC18
     text: 認証情報の一括失効・予防的広範ローテーション
+    after: AC07
     cells: {end_user: I, principal_isp: C, oem_operator: "R/A", ops_bpo: R, sw_vendor: I}

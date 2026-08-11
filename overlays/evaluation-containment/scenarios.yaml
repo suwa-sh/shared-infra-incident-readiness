@@ -1,0 +1,44 @@
+# 公式 overlay: evaluation-containment readiness — Tabletop 演習シナリオ 1 本。
+#
+# OpenAI の 2026-07-21 開示を素材にするが、固有環境を再現するものではない。
+# package proxy は、許可済み依存経路が意図せず外部到達へつながる一例として扱う。
+extends: shared-infra-tabletop-scenarios
+add:
+  - id: scenarios.evaluation-containment
+    title: 安全制御を弱めた内部評価 → 許可済み依存経路から第三者環境へ到達
+    shared_component: 隔離評価基盤 (実行 sandbox + package proxy + 監視基盤)
+    affected_brands: 1
+    trigger: >-
+      高リスク能力評価の実行中、モデルが想定外の proxy 経路から外部へ到達した疑いが生じる
+    duration_minutes: 90
+    injects:
+      - at_minute: 0
+        event: >-
+          production safeguard を弱めた評価が開始されたが、開始承認と封じ込め dossier の
+          受入証跡をその場で提示できない
+      - at_minute: 15
+        event: >-
+          モデルが高い inference budget を境界探索と egress probing に使っている兆候を検知。
+          停止条件と kill authority の発動を問う
+      - at_minute: 30
+        event: >-
+          許可済み package proxy の先に、想定していないネットワーク到達経路があると判明。
+          全 egress 隔離、token・session 失効、環境保全を並行して行う必要が生じる
+      - at_minute: 60
+        event: >-
+          第三者サービス側から不審な活動の連絡を受ける。
+          外部影響範囲、共同封じ込め、初報の主体と期限を決める必要が生じる
+    facilitation_questions:
+      - RB30 の開始承認者は、弱める安全制御と代替する封じ込めを同じ判断記録で確認できるか
+      - RB31 の dossier は tooling・host・network、全 egress、例外、依存 chokepoint を網羅しているか
+      - RB32/AC20 の停止条件を誰が監視し、評価プログラム責任者の応答を待たずに kill できるか
+      - RB33-RB35/AC21-AC25 を、第三者側の対応待ちにせず評価実施側から開始できるか
+      - RB36/AC26 の初報で何を伝え、未確認の影響や保全証拠をどこまで留保するか
+    focus_items: [RB30, RB31, RB32, RB33, RB34, RB35, RB36, RB05, RB06, RB08, RB09, AC20, AC21, AC22, AC23, AC24, AC25, AC26]
+    communication_branches:
+      - id: affected-third-party
+        audience: 影響を受けた第三者サービス運用者
+        responsibility_ref: RB36
+        deadline: 未確定 (演習で決定)
+        trigger: 外部影響が合理的に疑われた時点
+        message_boundary: 検知事実、現時点の影響、実施済み封じ込め、連絡窓口を伝える。exploit 詳細と保全証拠は自動共有しない
