@@ -1,0 +1,92 @@
+schema_version: 1
+review_owner: repository-maintainer
+sources:
+  - id: kddi-isp-mail-incident-2026
+    title: ISP事業者向けメールシステムに対する不正アクセスの発生について
+    authority: KDDI株式会社
+    source_kind: incident-disclosure
+    jurisdiction: JP
+    url: https://newsroom.kddi.com/news/assets/2026/kddi_nr_s-71_4593/kddi_nr_s-71_4593_pdf_01.pdf
+    published_on: 2026-06-23
+    last_verified_on: 2026-08-12
+    next_review_on: 2026-11-10
+    applies_to:
+      - {path: definitions/responsibility-matrix.yaml, item_refs: ["*"]}
+      - {path: definitions/incident-raci.yaml, item_refs: ["*"]}
+      - {path: definitions/scenarios.yaml, item_refs: ["*"]}
+
+  - id: appi-current-law
+    title: 個人情報の保護に関する法律
+    authority: e-Gov法令検索
+    source_kind: law
+    jurisdiction: JP
+    url: https://laws.e-gov.go.jp/document?lawid=415AC0000000057
+    last_verified_on: 2026-08-12
+    next_review_on: 2026-11-10
+    applies_to:
+      - {path: definitions/notification-obligations.yaml, item_refs: [OB01, OB02, OB02b, OB04, OB05]}
+      - {path: definitions/dpa-clauses.yaml, item_refs: ["*"]}
+
+  - id: ppc-leak-reporting
+    title: 漏えい等報告・本人への通知の義務化について
+    authority: 個人情報保護委員会
+    source_kind: regulator-guidance
+    jurisdiction: JP
+    url: https://www.ppc.go.jp/news/kaiseihou_feature/roueitouhoukoku_gimuka/
+    effective_from: 2022-04-01
+    last_verified_on: 2026-08-12
+    next_review_on: 2026-11-10
+    applies_to:
+      - {path: definitions/notification-obligations.yaml, item_refs: [OB01, OB02, OB04]}
+      - {path: definitions/dpa-clauses.yaml, item_refs: [DPA03, DPA05]}
+
+  - id: telecom-business-act-current
+    title: 電気通信事業法
+    authority: e-Gov法令検索
+    source_kind: law
+    jurisdiction: JP
+    url: https://laws.e-gov.go.jp/law/359AC0000000086
+    last_verified_on: 2026-08-12
+    next_review_on: 2026-11-10
+    applies_to:
+      - {path: definitions/notification-obligations.yaml, item_refs: [OB03]}
+
+  - id: huggingface-security-incident-2026-07
+    title: Security incident disclosure, July 2026
+    authority: Hugging Face
+    source_kind: incident-disclosure
+    jurisdiction: GLOBAL
+    url: https://huggingface.co/blog/security-incident-july-2026
+    published_on: 2026-07-16
+    last_verified_on: 2026-08-12
+    next_review_on: 2027-02-08
+    applies_to:
+      - {path: overlays/agentic-attacker/responsibility.yaml, item_refs: ["*"]}
+      - {path: overlays/agentic-attacker/incident-raci.yaml, item_refs: ["*"]}
+      - {path: overlays/agentic-attacker/scenarios.yaml, item_refs: ["*"]}
+
+  - id: openai-huggingface-evaluation-incident-2026
+    title: OpenAI and Hugging Face partner to address security incident during model evaluation
+    authority: OpenAI
+    source_kind: incident-disclosure
+    jurisdiction: GLOBAL
+    url: https://openai.com/index/hugging-face-model-evaluation-security-incident/
+    published_on: 2026-07-21
+    last_verified_on: 2026-08-12
+    next_review_on: 2027-02-08
+    applies_to:
+      - {path: overlays/evaluation-containment/responsibility.yaml, item_refs: ["*"]}
+      - {path: overlays/evaluation-containment/incident-raci.yaml, item_refs: ["*"]}
+      - {path: overlays/evaluation-containment/scenarios.yaml, item_refs: ["*"]}
+
+  - id: aisi-inspect-sandboxing-toolkit
+    title: The Inspect Sandboxing Toolkit
+    authority: UK AI Security Institute
+    source_kind: technical-guidance
+    jurisdiction: GB
+    url: https://www.aisi.gov.uk/blog/the-inspect-sandboxing-toolkit-scalable-and-secure-ai-agent-evaluations
+    last_verified_on: 2026-08-12
+    next_review_on: 2027-02-08
+    applies_to:
+      - {path: overlays/evaluation-containment/responsibility.yaml, item_refs: [RB31, RB32, RB33]}
+      - {path: overlays/evaluation-containment/incident-raci.yaml, item_refs: [AC20, AC21, AC22, AC23]}

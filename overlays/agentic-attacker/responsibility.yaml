@@ -20,6 +20,7 @@
 # 能力の準備状況 (検証日・切替所要時間など) は Tabletop シナリオの証跡確認
 # 設問で扱う (overlays/agentic-attacker/scenarios.yaml)。
 extends: shared-infra-responsibility-matrix
+compatible_base_version: 1
 add:
   - id: resp.RB20
     text: 機械速度攻撃の検知・一次トリアージ自動化 (AIトリアージ基盤) の整備・運用

@@ -10,3 +10,11 @@ dist
 build
 *.egg-info
 requirements.frozen.txt
+docs
+tests
+.qlty
+CLAUDE.md
+SECURITY.md
+package.json
+package-lock.json
+scripts

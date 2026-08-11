@@ -43,6 +43,7 @@ bin/siir list-definitions \
 ```
 
 Read the effective `items` from the scenarios, responsibility-matrix, and incident-raci entries.
+Read them under `result` only after confirming `contract_version == 1`.
 Use their text, notes, cells, role names, and scenario IDs.
 Do not hard-code descriptions or counts.
 
@@ -50,7 +51,7 @@ Do not hard-code descriptions or counts.
 
 Use an answers YAML with the same shape as `incident-readiness-check`.
 If the organisation has no completed matrix, explain that blank cells fall back to the definition's `recommended` values.
-Use a minimal file containing only `target` only when the user accepts that fallback.
+Use a minimal file containing `schema_version: 1` and `target` only when the user accepts that fallback.
 
 ### 4. Render the runbook
 

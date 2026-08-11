@@ -3,6 +3,7 @@
 # column) plus a company-specific responsibility item, with NO overwrite of the
 # existing 4 roles or 12 items.
 extends: shared-infra-responsibility-matrix
+compatible_base_version: 1
 add:
   - id: roles.end_user
     name: 利用者

@@ -38,8 +38,8 @@ Docker イメージ内の公式 overlay は `/app/overlays/` にあります。
 自社の回答ファイルは `/data` にマウントします。
 
 ```bash
-docker run --rm -v "$PWD:/data" \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness \
+docker run --rm --read-only --mount type=bind,src="$PWD",dst=/data,readonly \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-responsibility /data/my-answers.yaml \
   --overlay /app/overlays/agentic-attacker/responsibility.yaml
 ```

@@ -1,6 +1,7 @@
 # 共用メール基盤事案をなぞった記入例 (KDDI 構図)。
 # わざと RB04 を「都度協議 (tbd)」、RB12 を未割当のまま残し、
 # check-responsibility が gray (yellow) と block を正しく出し分けることを示す。
+schema_version: 1
 target: 共用メール基盤 (6 ISP OEM)
 matrix:
   RB01: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }

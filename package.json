@@ -1,0 +1,11 @@
+{
+  "name": "shared-infra-incident-readiness-docs",
+  "private": true,
+  "version": "0.0.0",
+  "devDependencies": {
+    "mermaid": "11.16.1"
+  },
+  "scripts": {
+    "lint:mermaid": "node scripts/check_mermaid.mjs docs/*.md"
+  }
+}

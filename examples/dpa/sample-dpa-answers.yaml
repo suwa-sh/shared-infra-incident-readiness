@@ -1,4 +1,5 @@
 # DPA 条項カバレッジの記入例。DPA03 (通知SLA) が missing なので BLOCK になる。
+schema_version: 1
 target: 共用メール基盤 委託契約 v1
 clauses:
   DPA01: present

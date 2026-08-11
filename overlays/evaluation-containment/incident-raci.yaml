@@ -3,6 +3,7 @@
 # `after` は正本アクティビティまたは先行 overlay アクティビティの直後へ挿入する。
 # これにより封じ込め連鎖と第三者対応連鎖を、既存 Day 0-3 の流れに接続する。
 extends: shared-infra-incident-raci
+compatible_base_version: 1
 add:
   - id: raci_roles.evaluation_program_owner
     name: 評価プログラム責任者

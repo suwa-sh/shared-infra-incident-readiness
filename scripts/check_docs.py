@@ -11,15 +11,18 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote
 
+from markdown_it import MarkdownIt
+
 
 ROOT = Path(__file__).resolve().parents[1]
 IMAGE_NAME = "ghcr.io/suwa-sh/shared-infra-incident-readiness"
 SIIR = str(ROOT / "bin" / "siir")
 SAMPLE_RESPONSIBILITY = "examples/responsibility/sample-oem-mail.yaml"
+AGENTIC_RESPONSIBILITY_OVERLAY = "overlays/agentic-attacker/responsibility.yaml"
 IMAGE_REF_RE = re.compile(
     rf"{re.escape(IMAGE_NAME)}(?P<tag>:[A-Za-z0-9._-]+)?"
 )
-MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+MARKDOWN = MarkdownIt("commonmark")
 
 
 def documentation_files() -> list[Path]:
@@ -27,6 +30,12 @@ def documentation_files() -> list[Path]:
     return [
         ROOT / "README.md",
         ROOT / "README.ja.md",
+        ROOT / "CHANGELOG.md",
+        ROOT / "COMPATIBILITY.md",
+        ROOT / "CONTRIBUTING.md",
+        ROOT / "MIGRATION.md",
+        ROOT / "SECURITY.md",
+        ROOT / "SUPPORT.md",
         *sorted((ROOT / "docs").glob("*.md")),
         *sorted((ROOT / "examples" / "skills").glob("*/SKILL.md")),
     ]
@@ -62,6 +71,24 @@ def heading_slugs(path: Path) -> set[str]:
         slugs.add(base if count == 0 else f"{base}-{count}")
 
     return slugs
+
+
+def _child_link_target(child) -> str | None:
+    if child.type == "link_open":
+        return child.attrGet("href")
+    if child.type == "image":
+        return child.attrGet("src")
+    return None
+
+
+def markdown_link_targets(path: Path) -> list[str]:
+    """Return links resolved by CommonMark, including reference-style links."""
+    targets: list[str] = []
+    for token in MARKDOWN.parse(path.read_text(encoding="utf-8")):
+        for child in token.children or []:
+            if target := _child_link_target(child):
+                targets.append(target)
+    return targets
 
 
 def parse_link_target(raw: str) -> tuple[str, str]:
@@ -111,7 +138,7 @@ def check_local_links(files: list[Path]) -> tuple[list[str], int]:
     slug_cache: dict[Path, set[str]] = {}
 
     for source in files:
-        raw_links = MARKDOWN_LINK_RE.findall(source.read_text(encoding="utf-8"))
+        raw_links = markdown_link_targets(source)
         for raw in raw_links:
             is_local, error = check_one_local_link(source, raw, slug_cache)
             checked += int(is_local)
@@ -121,28 +148,55 @@ def check_local_links(files: list[Path]) -> tuple[list[str], int]:
     return errors, checked
 
 
+def _invalid_image_tags(refs: list[str]) -> list[str]:
+    return sorted({tag or "<untagged>" for tag in refs if not tag or tag == ":latest"})
+
+
+def _check_non_readme_image_refs(document: Path, refs: list[str]) -> list[str]:
+    invalid = _invalid_image_tags(refs)
+    if not invalid:
+        return []
+    return [
+        f"{document.relative_to(ROOT)}: image references must use an explicit "
+        f"version tag: {', '.join(invalid)}"
+    ]
+
+
+def _readme_image_refs(
+    readme: Path, text: str, refs: list[str]
+) -> tuple[list[str], set[str], set[str]]:
+    if not refs:
+        return [f"{readme.name}: no {IMAGE_NAME} reference"], set(), set()
+    invalid = _invalid_image_tags(refs)
+    errors = []
+    if invalid:
+        errors.append(
+            f"{readme.name}: image references must use an explicit version tag: "
+            + ", ".join(invalid)
+        )
+    versions = {
+        tag[1:] for tag in refs if tag and re.fullmatch(r":v\d+\.\d+\.\d+", tag)
+    }
+    paths = set(re.findall(r"/app/[A-Za-z0-9._/-]+", text))
+    return errors, versions, paths
+
+
 def check_image_references() -> tuple[list[str], str, set[str]]:
-    """Require one explicit released-image tag across both READMEs."""
+    """Require one explicit, consistent, already-published README image tag."""
     errors: list[str] = []
     versions_by_file: dict[Path, set[str]] = {}
     image_paths: set[str] = set()
 
-    for readme in (ROOT / "README.md", ROOT / "README.ja.md"):
-        text = readme.read_text(encoding="utf-8")
+    for document in documentation_files():
+        text = document.read_text(encoding="utf-8")
         refs = IMAGE_REF_RE.findall(text)
-        if not refs:
-            errors.append(f"{readme.name}: no {IMAGE_NAME} reference")
+        if document.name not in {"README.md", "README.ja.md"}:
+            errors.extend(_check_non_readme_image_refs(document, refs))
             continue
-        invalid = sorted({tag or "<untagged>" for tag in refs if not tag or tag == ":latest"})
-        if invalid:
-            errors.append(
-                f"{readme.name}: image references must use an explicit version tag: "
-                + ", ".join(invalid)
-            )
-        versions_by_file[readme] = {
-            tag[1:] for tag in refs if tag and re.fullmatch(r":v\d+\.\d+\.\d+", tag)
-        }
-        image_paths.update(re.findall(r"/app/[A-Za-z0-9._/-]+", text))
+        readme_errors, versions, paths = _readme_image_refs(document, text, refs)
+        errors.extend(readme_errors)
+        versions_by_file[document] = versions
+        image_paths.update(paths)
 
     version_sets = list(versions_by_file.values())
     versions = set().union(*version_sets) if version_sets else set()
@@ -259,7 +313,7 @@ def check_cli_examples() -> list[str]:
                 "json",
                 "--detail",
                 "--overlay",
-                "overlays/agentic-attacker/responsibility.yaml",
+                AGENTIC_RESPONSIBILITY_OVERLAY,
             ],
             0,
         ),
@@ -273,7 +327,7 @@ def check_cli_examples() -> list[str]:
                 "--overlay",
                 "overlays/agentic-attacker/scenarios.yaml",
                 "--overlay",
-                "overlays/agentic-attacker/responsibility.yaml",
+                AGENTIC_RESPONSIBILITY_OVERLAY,
                 "--overlay",
                 "overlays/agentic-attacker/incident-raci.yaml",
             ],
@@ -292,6 +346,8 @@ def check_cli_examples() -> list[str]:
                 "overlays/evaluation-containment/responsibility.yaml",
                 "--overlay",
                 "overlays/evaluation-containment/incident-raci.yaml",
+                "--overlay",
+                AGENTIC_RESPONSIBILITY_OVERLAY,
             ],
             0,
         ),
@@ -312,7 +368,7 @@ def check_container(version: str, image_paths: set[str]) -> list[str]:
 
     try:
         version_result = run_process(
-            ["docker", "run", "--rm", image, "--version"],
+            ["docker", "run", "--rm", "--read-only", image, "--version"],
             capture_stdout=True,
         )
     except FileNotFoundError as error:
@@ -326,7 +382,7 @@ def check_container(version: str, image_paths: set[str]) -> list[str]:
 
     for path in sorted(image_paths):
         error = run_command(
-            ["docker", "run", "--rm", "--entrypoint", "test", image, "-e", path]
+            ["docker", "run", "--rm", "--read-only", "--entrypoint", "test", image, "-e", path]
         )
         if error:
             errors.append(f"documented image path is unavailable ({path}): {error}")
@@ -346,6 +402,11 @@ def main() -> int:
         action="store_true",
         help="verify the documented release image and /app paths with Docker",
     )
+    parser.add_argument(
+        "--container-version",
+        metavar="VERSION",
+        help="override the README version for a post-release container check",
+    )
     args = parser.parse_args()
 
     files = documentation_files()
@@ -356,7 +417,9 @@ def main() -> int:
     if args.cli:
         errors.extend(check_cli_examples())
     if args.container:
-        errors.extend(check_container(version, image_paths))
+        errors.extend(check_container(args.container_version or version, image_paths))
+    elif args.container_version:
+        errors.append("--container-version requires --container")
 
     if errors:
         for error in errors:

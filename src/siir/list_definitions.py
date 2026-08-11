@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from . import definitions as defn_mod
+from . import contracts
 import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
@@ -31,9 +32,9 @@ def summarize(overlay_paths: list[str | Path] | None = None, *, detail: bool = F
     # Route each overlay to the base its `extends` targets. An overlay that
     # matches no base raises (input error) instead of being silently dropped —
     # the old fallback showed the base and exited 0, hiding the mistake.
-    routed = defn_mod.route_overlays(overlay_paths)
+    definitions = defn_mod.load_all(overlay_paths)
     for name, (group_key, role_group_key) in _PRIMARY_GROUP.items():
-        defn = defn_mod.load(name, overlay_paths=routed[name])
+        defn = definitions[name]
         sep = overlay_mod.separator_of(defn)
         groups = overlay_mod.group_items(defn)
         leaves = groups.get(group_key, {}).get("leaves", [])
@@ -77,7 +78,41 @@ def check_overlay(overlay_path: str | Path) -> overlay_mod.MergeResult:
                 )
             ],
         )
-    return overlay_mod.apply_overlay(base, ov)
+    try:
+        defn_mod.validate_overlay_compatibility(ov, base, overlay_path)
+    except ValueError as error:
+        return overlay_mod.MergeResult(
+            merged={},
+            violations=[
+                overlay_mod.MergeViolation(
+                    path="compatible_base_version",
+                    kind="incompatible_base_version",
+                    message=str(error),
+                )
+            ],
+        )
+    result = overlay_mod.apply_overlay(base, defn_mod.engine_overlay(ov))
+    if not result.ok:
+        return result
+    try:
+        # An overlay directory is one composable package. Cross-definition
+        # references in a scenario file can therefore resolve through its
+        # responsibility and RACI siblings, while a standalone custom overlay
+        # is still checked against the base definitions.
+        sibling_paths = sorted(Path(overlay_path).parent.glob("*.yaml"))
+        defn_mod.load_all(sibling_paths or [overlay_path])
+    except ValueError as error:
+        return overlay_mod.MergeResult(
+            merged=result.merged,
+            violations=[
+                overlay_mod.MergeViolation(
+                    path="effective-definitions",
+                    kind="semantic_reference",
+                    message=str(error),
+                )
+            ],
+        )
+    return result
 
 
 def _fmt_ep(ep: dict) -> str:
@@ -100,8 +135,23 @@ def render_text(summaries: list[dict]) -> str:
     return "\n".join(lines).rstrip()
 
 
-def render_json(summaries: list[dict]) -> str:
-    return json.dumps(summaries, indent=2, ensure_ascii=False)
+def render_json(
+    summaries: list[dict], overlay_paths: list[str | Path] | None = None
+) -> str:
+    provenance = contracts.make_provenance(
+        "list-definitions",
+        definitions={
+            summary["name"]: {
+                "version": summary["version"],
+                "summary": summary,
+            }
+            for summary in summaries
+        },
+        overlay_paths=overlay_paths,
+    )
+    return json.dumps(
+        contracts.envelope(summaries, provenance), indent=2, ensure_ascii=False
+    )
 
 
 def render_overlay_text(result: overlay_mod.MergeResult) -> str:
@@ -113,12 +163,20 @@ def render_overlay_text(result: overlay_mod.MergeResult) -> str:
     return "\n".join(lines)
 
 
-def render_overlay_json(result: overlay_mod.MergeResult) -> str:
-    return json.dumps(
-        {
+def render_overlay_json(
+    result: overlay_mod.MergeResult, overlay_path: str | Path | None = None
+) -> str:
+    payload = {
             "ok": result.ok,
             "violations": [{"path": v.path, "kind": v.kind, "message": v.message} for v in result.violations],
-        },
+        }
+    provenance = contracts.make_provenance(
+        "check-overlay",
+        definitions={"effective-overlay-target": result.merged} if result.merged else {},
+        overlay_paths=[overlay_path] if overlay_path else None,
+    )
+    return json.dumps(
+        contracts.envelope(payload, provenance),
         indent=2,
         ensure_ascii=False,
     )

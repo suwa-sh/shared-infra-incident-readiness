@@ -125,7 +125,11 @@ def _cmd_tabletop(args) -> int:
 
 def _cmd_check_overlay(args) -> int:
     result = _list.check_overlay(args.overlay_path)
-    _emit(_list.render_overlay_json(result) if args.format == "json" else _list.render_overlay_text(result))
+    _emit(
+        _list.render_overlay_json(result, args.overlay_path)
+        if args.format == "json"
+        else _list.render_overlay_text(result)
+    )
     return 0 if result.ok else 2
 
 
@@ -137,7 +141,11 @@ def _cmd_list_definitions(args) -> int:
     except _defn.OverlayError as e:
         sys.stderr.write(f"[ERROR] {e}\n")
         return 3
-    _emit(_list.render_json(summaries) if args.format == "json" else _list.render_text(summaries))
+    _emit(
+        _list.render_json(summaries, args.overlay)
+        if args.format == "json"
+        else _list.render_text(summaries)
+    )
     return 0
 
 

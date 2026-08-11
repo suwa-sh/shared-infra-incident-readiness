@@ -19,7 +19,13 @@
         { "required": ["obligation"], "not": { "required": ["clause"] } },
         { "required": ["clause"], "not": { "required": ["obligation"] } }
       ],
-      "required": ["sent_at", "status"],
+      "required": ["status"],
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "sent"}}, "required": ["status"]},
+          "then": {"required": ["sent_at"]}
+        }
+      ],
       "additionalProperties": false
     },
     "shared_component": {
@@ -46,6 +52,7 @@
     "incident_record_minimum": {
       "type": "object",
       "properties": {
+        "schema_version": { "const": 1 },
         "incident_id": { "type": "string" },
         "title": { "type": "string" },
         "detected_at": { "type": "string", "format": "date-time" },
@@ -57,7 +64,7 @@
           "items": { "$ref": "#/$defs/notification_entry" }
         }
       },
-      "required": ["incident_id", "detected_at", "shared_component", "affected", "notifications"],
+      "required": ["schema_version", "incident_id", "detected_at", "shared_component", "affected", "notifications"],
       "additionalProperties": true
     },
     "incident_record_extended": {

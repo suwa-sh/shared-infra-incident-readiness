@@ -5,6 +5,7 @@ route_overlays による複数定義コマンド (tabletop / render-runbook /
 list-definitions) への振り分け、単一定義コマンドの不一致エラーを固定する。
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -37,6 +38,13 @@ def test_official_overlay_valid_merges_ok(path):
     assert result.ok, [f"{v.path}: {v.message}" for v in result.violations]
 
 
+def test_list_definitions_json_records_ordered_overlay_provenance():
+    summaries = list_definitions.summarize(ALL_OV)
+    rendered = json.loads(list_definitions.render_json(summaries, ALL_OV))
+    assert [item["order"] for item in rendered["provenance"]["overlays"]] == [1, 2, 3]
+    assert all(item["digest"].startswith("sha256:") for item in rendered["provenance"]["overlays"])
+
+
 # --- check-responsibility (単一定義コマンド) ---
 
 
@@ -51,8 +59,8 @@ def test_check_responsibility_with_overlay_scores_17_items_revise():
 
 
 def test_check_responsibility_without_overlay_unchanged_12_items():
-    result = check_responsibility.check(ANSWERS)
-    assert len(result.items) == 12                    # overlay 無しでは既存診断のまま
+    with pytest.raises(ValueError, match="unknown item"):
+        check_responsibility.check(ANSWERS)
 
 
 def test_check_responsibility_mismatched_overlay_raises():

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/suwa-sh/shared-infra-incident-readiness/schemas/responsibility-answers.schema.json",
+  "title": "SIIR responsibility answers",
+  "type": "object",
+  "required": ["schema_version", "target", "matrix"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "target": {"type": "string", "minLength": 1},
+    "matrix": {
+      "type": "object",
+      "propertyNames": {"pattern": "^RB[0-9]+$"},
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+        "additionalProperties": {
+          "type": "string",
+          "enum": ["R", "A", "C", "I", "R/A", "A/R", "tbd", "negotiate", "-"]
+        }
+      }
+    },
+    "communications": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deadline": {"type": "string"}
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

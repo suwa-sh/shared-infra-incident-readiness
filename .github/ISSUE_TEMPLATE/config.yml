@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/suwa-sh/shared-infra-incident-readiness/security/advisories/new
+    about: 脆弱性を非公開で報告します。

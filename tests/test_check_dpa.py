@@ -1,3 +1,4 @@
+import pytest
 import yaml
 
 from siir import check_dpa as cd
@@ -5,7 +6,10 @@ from siir import check_dpa as cd
 
 def _write(tmp_path, clauses):
     p = tmp_path / "dpa.yaml"
-    p.write_text(yaml.safe_dump({"target": "c", "clauses": clauses}, allow_unicode=True), encoding="utf-8")
+    p.write_text(
+        yaml.safe_dump({"schema_version": 1, "target": "c", "clauses": clauses}, allow_unicode=True),
+        encoding="utf-8",
+    )
     return p
 
 
@@ -46,3 +50,13 @@ def test_overlay_added_clause_is_evaluated(tmp_path, examples):
     )
     assert any(c.id == "DPA11" for c in result.clauses)
     assert result.conclusion == "BLOCK"
+
+
+def test_unknown_clause_is_input_error(tmp_path):
+    with pytest.raises(ValueError, match="unknown clause"):
+        cd.check(_write(tmp_path, {"DPA999": "present"}))
+
+
+def test_unknown_status_is_contract_error(tmp_path):
+    with pytest.raises(ValueError, match="contract violation"):
+        cd.check(_write(tmp_path, {"DPA01": "almost"}))

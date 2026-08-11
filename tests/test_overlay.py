@@ -20,7 +20,7 @@ def test_base_definitions_validate():
 def test_add_role_and_item_ok(examples):
     base = _base("responsibility-matrix")
     overlay = ov.load_yaml(examples / "overlays" / "sample-company" / "extra-roles.yaml")
-    result = ov.apply_overlay(base, overlay)
+    result = ov.apply_overlay(base, defn_mod.engine_overlay(overlay))
     assert result.ok, [v.message for v in result.violations]
     ids = _ids(result.merged)
     assert "roles.end_user" in ids
@@ -30,7 +30,7 @@ def test_add_role_and_item_ok(examples):
 def test_strengthen_lower_ok_and_weaken_rejected(examples):
     base = _base("dpa-clauses")
     overlay = ov.load_yaml(examples / "overlays" / "sample-company" / "extra-clauses.yaml")
-    result = ov.apply_overlay(base, overlay)
+    result = ov.apply_overlay(base, defn_mod.engine_overlay(overlay))
     assert result.ok, [v.message for v in result.violations]
     dpa03 = next(i for i in result.merged["items"] if i["id"] == "clauses.DPA03")
     assert dpa03["sla_hours"] == 12  # 24 -> 12 is stricter

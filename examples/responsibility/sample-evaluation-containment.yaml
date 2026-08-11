@@ -3,6 +3,7 @@
 # ベース 12 項目と agentic-attacker 5 項目は PASS にし、評価実施側の RB36 だけを
 # tbd に残す。evaluation-containment 単独でも、agentic-attacker と併用しても、
 # 意図した 1 項目だけが REVISE になる。
+schema_version: 1
 target: 架空の Frontier Evaluation Lab
 matrix:
   RB01: {principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I}
