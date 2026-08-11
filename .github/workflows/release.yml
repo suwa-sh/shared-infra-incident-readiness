@@ -92,8 +92,8 @@ jobs:
           IMAGE=$(printf '%s/%s' "$REGISTRY" "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
           ENGINE_VERSION=$(sed -n 's/.*overlay-scoring-skeleton==\([0-9][0-9.]*\).*/\1/p' pyproject.toml)
           if docker buildx imagetools inspect "$IMAGE:$TAG" >/dev/null 2>&1; then
-            echo "version image already exists; preserving immutable tag"
-            DIGEST=$(docker buildx imagetools inspect "$IMAGE:$TAG" --format '{{.Manifest.Digest}}')
+            echo "refusing to attest an existing image without verifying its source revision: $IMAGE:$TAG" >&2
+            exit 1
           else
             docker buildx build \
               --platform linux/amd64,linux/arm64 \

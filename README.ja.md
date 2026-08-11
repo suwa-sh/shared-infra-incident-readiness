@@ -36,16 +36,16 @@ SIIR は、共用メール基盤事案の公開情報を基に作成しました
 
 ## 3 分で試す
 
-公開済みの Docker イメージ `v0.3.0` を使います。
+Docker イメージ `v1.0.0` を使います。
 セットアップは不要です。
 
 ```bash
 docker run --rm --read-only \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v1.0.0 \
   --version
 
 docker run --rm --read-only \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v1.0.0 \
   check-responsibility \
   examples/responsibility/sample-oem-mail.yaml
 ```
@@ -75,7 +75,7 @@ siir() {
   docker run --rm --read-only \
     --mount type=bind,src="$PWD",dst=/data,readonly \
     -w /data \
-    ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+    ghcr.io/suwa-sh/shared-infra-incident-readiness:v1.0.0 \
     "$@"
 }
 ```
@@ -172,7 +172,7 @@ siir check-responsibility \
   --overlay /app/overlays/agentic-attacker/responsibility.yaml
 ```
 
-この overlay は Docker イメージ `v0.3.0` に含まれます。
+この overlay は Docker イメージ `v1.0.0` に含まれます。
 詳細は [agentic-attacker overlay](docs/06_agentic_attacker_overlay.md) を参照してください。
 
 ### evaluation-containment
@@ -180,8 +180,7 @@ siir check-responsibility \
 `evaluation-containment` は、安全制御を弱めた能力評価を実施する組織の責任を追加します。
 責任項目 7 件、順序付き初動活動 7 件、評価専用ロール 4 件、Tabletop シナリオ、第三者連絡の分岐で構成します。
 
-この overlay は `v0.3.0` のリリース後に追加されています。
-次のタグを公開するまでは、現在の source checkout で `bin/siir` を実行してください。
+この overlay は Docker イメージ `v1.0.0` に含まれます。
 
 ```bash
 python3 -m venv .venv

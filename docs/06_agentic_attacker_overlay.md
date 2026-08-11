@@ -39,7 +39,7 @@ Docker イメージ内の公式 overlay は `/app/overlays/` にあります。
 
 ```bash
 docker run --rm --read-only --mount type=bind,src="$PWD",dst=/data,readonly \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v1.0.0 \
   check-responsibility /data/my-answers.yaml \
   --overlay /app/overlays/agentic-attacker/responsibility.yaml
 ```

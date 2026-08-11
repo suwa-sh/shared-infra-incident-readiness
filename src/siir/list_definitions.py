@@ -101,13 +101,14 @@ def check_overlay(overlay_path: str | Path) -> overlay_mod.MergeResult:
         # is still checked against the base definitions.
         sibling_paths = sorted(Path(overlay_path).parent.glob("*.yaml"))
         defn_mod.load_all(sibling_paths or [overlay_path])
-    except ValueError as error:
+    except (ValueError, OverlayError) as error:
+        kind = "overlay_violation" if isinstance(error, OverlayError) else "semantic_reference"
         return overlay_mod.MergeResult(
             merged=result.merged,
             violations=[
                 overlay_mod.MergeViolation(
                     path="effective-definitions",
-                    kind="semantic_reference",
+                    kind=kind,
                     message=str(error),
                 )
             ],
@@ -138,15 +139,14 @@ def render_text(summaries: list[dict]) -> str:
 def render_json(
     summaries: list[dict], overlay_paths: list[str | Path] | None = None
 ) -> str:
+    # Provenance identifies the effective YAML definitions, not this command's
+    # presentation summary. The latter changes with --detail even when the
+    # definition does not, so hashing it would make reproducibility metadata
+    # output-dependent.
+    definitions = defn_mod.load_all(overlay_paths)
     provenance = contracts.make_provenance(
         "list-definitions",
-        definitions={
-            summary["name"]: {
-                "version": summary["version"],
-                "summary": summary,
-            }
-            for summary in summaries
-        },
+        definitions=definitions,
         overlay_paths=overlay_paths,
     )
     return json.dumps(
