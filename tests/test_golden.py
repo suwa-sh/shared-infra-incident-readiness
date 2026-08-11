@@ -20,6 +20,8 @@ import pytest
 
 from siir import check_dpa as cd
 from siir import check_responsibility as cr
+from siir import contracts
+from siir import definitions
 from siir import list_definitions as ld
 from siir import render_runbook as rb
 from siir import tabletop as tt
@@ -71,6 +73,15 @@ def test_list_definitions_ids_and_roles_match_golden():
         assert g["count"] == w["count"]
         assert g["ids"] == w["ids"]
         assert g["roles"] == w["roles"]
+
+
+def test_list_definition_provenance_hashes_effective_definitions_not_view_shape():
+    compact = json.loads(ld.render_json(ld.summarize()))
+    detailed = json.loads(ld.render_json(ld.summarize(detail=True)))
+
+    assert compact["provenance"]["definitions"] == detailed["provenance"]["definitions"]
+    for name, definition in definitions.load_all().items():
+        assert compact["provenance"]["definitions"][name]["digest"] == contracts._digest_object(definition)
 
 
 def test_dpa03_confirmed_sla_is_72h_not_dropped(examples):

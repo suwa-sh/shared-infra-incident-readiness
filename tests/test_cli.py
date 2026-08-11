@@ -50,6 +50,22 @@ def test_check_overlay_bad_exits_2(tmp_path):
     assert run(["check-overlay", str(bad)]) == 2  # id collision -> rejected overlay
 
 
+def test_check_overlay_invalid_sibling_exits_2_without_traceback(tmp_path, capsys):
+    valid = tmp_path / "valid.yaml"
+    valid.write_text(
+        "extends: shared-infra-dpa-clauses\ncompatible_base_version: 1\nadd: []\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "invalid.yaml").write_text(
+        "extends: shared-infra-dpa-clauses\ncompatible_base_version: 1\n"
+        "add:\n  - id: clauses.DPA01\n",
+        encoding="utf-8",
+    )
+
+    assert run(["check-overlay", str(valid)]) == 2
+    assert "Traceback" not in capsys.readouterr().err
+
+
 def test_missing_file_exits_3():
     assert run(["check-dpa", "/no/such/file.yaml"]) == 3
 

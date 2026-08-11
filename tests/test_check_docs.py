@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import re
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "check_docs.py"
@@ -57,3 +58,13 @@ def test_untagged_image_in_guide_is_rejected(tmp_path, monkeypatch):
     errors, version, _ = check_docs.check_image_references()
     assert version == "v1.2.3"
     assert any("<untagged>" in error for error in errors)
+
+
+def test_readme_image_version_matches_project_release_version():
+    project = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version = "([^"]+)"$', project, re.MULTILINE)
+    assert match
+
+    errors, version, _ = check_docs.check_image_references()
+    assert errors == []
+    assert version == f"v{match.group(1)}"

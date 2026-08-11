@@ -21,7 +21,7 @@ SIIR は入力を外部送信しませんが、事故記録や責任表には機
 ```bash
 docker run --rm --read-only \
   --mount type=bind,src="$PWD/input",dst=/data,readonly \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v1.0.0 \
   validate-record /data/incident.json --level extended --format json \
   > result.json
 ```
