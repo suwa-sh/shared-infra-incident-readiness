@@ -245,6 +245,8 @@ shared-infra-incident-readiness/
 pytest tests/
 bin/siir --help
 npx md-mermaid-lint docs/*.md
+python scripts/check_docs.py --cli
+python scripts/check_docs.py --container
 ```
 
 ## ライセンス

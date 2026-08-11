@@ -130,8 +130,8 @@ Responsibility readiness: 83%
 Conclusion: BLOCK
 ```
 
-See [`README.ja.md`](README.ja.md#使い方想定ワークフロー) for sample output of every
-command in the workflow.
+See [`README.ja.md`](README.ja.md#自社データで診断する) for the guided workflow
+from preparing organisation data to validating an incident record.
 
 ## Official overlay — agentic-attacker readiness
 
@@ -153,7 +153,7 @@ With Docker, the bundled overlays live under `/app` inside the image (your own
 answers are mounted at `/data`):
 
 ```bash
-docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness \
+docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-responsibility /data/my-answers.yaml \
   --overlay /app/overlays/agentic-attacker/responsibility.yaml
 ```
@@ -238,6 +238,8 @@ operations are allowed, declared per definition in `extension_points`:
 pytest tests/                  # boundary conditions, exit codes
 bin/siir --help                # CLI smoke
 npx md-mermaid-lint docs/*.md  # diagram syntax
+python scripts/check_docs.py --cli       # links, image tags, documented workflows
+python scripts/check_docs.py --container # released image and documented /app paths
 ```
 
 ## License

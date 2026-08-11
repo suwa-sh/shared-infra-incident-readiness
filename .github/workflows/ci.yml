@@ -39,14 +39,8 @@ jobs:
       - name: Run pytest
         run: pytest tests/ -v
 
-      - name: Smoke test the CLI
-        run: |
-          bin/siir --help
-          bin/siir check-responsibility examples/responsibility/sample-oem-mail.yaml || [ $? -eq 2 ]
-          bin/siir validate-record examples/records/sample-incident.json --level extended || [ $? -eq 2 ]
-          bin/siir render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
-          bin/siir tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
-          bin/siir check-overlay examples/overlays/sample-company/extra-clauses.yaml
+      - name: Test documented CLI workflows
+        run: python scripts/check_docs.py --cli
 
   docs-lint:
     runs-on: ubuntu-latest
@@ -63,5 +57,16 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Check links, anchors, and image tags
+        run: python scripts/check_docs.py
+
       - name: Lint Mermaid diagrams
         run: npx --yes md-mermaid-lint docs/*.md
+
+      - name: Check released container boundary
+        run: python scripts/check_docs.py --container

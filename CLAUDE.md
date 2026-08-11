@@ -55,6 +55,14 @@
 
 すべての doc は以下の順で構成する: 1. TL;DR / 2. When to use this / 3. Quick use / 4. Concept(表 + mermaid)/ 5. References。書き方は能動・短文・逆ピラミッド、観測事実と設計提案をラベル分けする。
 
+## ドキュメントとリリースの境界
+
+- README の Docker 例は `latest` やタグ無しを使わず、実際に公開済みのバージョンタグを明記する
+- main にだけ存在し、公開済みイメージに未収録の機能は source checkout 用として説明する。次のタグが公開されるまで、Docker で使えるように書かない
+- `/app/...` を README に記載する場合は、そのパスが記載した公開済みイメージ内に存在することを確認する
+- バージョン番号そのものを規約へ固定しない。`python scripts/check_docs.py --container` で README の記載と公開物を照合する
+- README、`docs/*.md`、`examples/skills/*/SKILL.md` を変更したら、ローカルリンク、見出し anchor、記載 CLI、Mermaid、公開イメージの境界を検証する
+
 ## 編集規約
 
 - **本文は日本語**。多言語 README は `README.md`=英語(入口)/ `README.ja.md`=日本語(正本)でバッジ直下に相互リンク
@@ -72,12 +80,15 @@
 ## 検証コマンド
 
 ```bash
-pip install -r requirements.txt pytest
-pytest tests/                              # overlay / scoring / SLA / runbook の境界条件
-bin/siir --help                            # CLI smoke
-bin/siir check-responsibility examples/responsibility/sample-oem-mail.yaml
+python3 -m venv .venv
+.venv/bin/pip install -e ".[test]"
+.venv/bin/pytest                           # overlay / scoring / SLA / runbook の境界条件
+python scripts/check_docs.py --cli         # link / anchor / image tag / 記載 CLI
 npx md-mermaid-lint docs/*.md              # mermaid 構文
+python scripts/check_docs.py --container   # 公開イメージと /app パス。Docker / network 必須
 ```
+
+リポジトリに `.venv` がある場合は、その Python と pytest を優先する。システムの pyenv が正常だと仮定しない。
 
 ## 横断的な注意点
 
