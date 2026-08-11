@@ -14,7 +14,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import check_responsibility as cr
+from . import contracts
 from . import definitions as defn_mod
+from . import input_contracts
 import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
@@ -27,6 +29,7 @@ class RunbookModel:
     stage1_items: list[dict] = field(default_factory=list)
     stage2_activities: list[dict] = field(default_factory=list)
     stage3_branches: list[dict] = field(default_factory=list)
+    provenance: dict = field(default_factory=dict)
 
 
 def _role_names(defn: dict, group_key: str = "roles") -> dict[str, str]:
@@ -60,12 +63,12 @@ def build(
     scenario_id: str,
     overlay_paths: list[str | Path] | None = None,
 ) -> RunbookModel:
-    routed = defn_mod.route_overlays(overlay_paths)
-    resp = defn_mod.load("responsibility-matrix", overlay_paths=routed["responsibility-matrix"])
-    raci = defn_mod.load("incident-raci", overlay_paths=routed["incident-raci"])
-    ob_defn = defn_mod.load("notification-obligations", overlay_paths=routed["notification-obligations"])
-    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=routed["dpa-clauses"])
-    sc_defn = defn_mod.load("scenarios", overlay_paths=routed["scenarios"])
+    definitions = defn_mod.load_all(overlay_paths)
+    resp = definitions["responsibility-matrix"]
+    raci = definitions["incident-raci"]
+    ob_defn = definitions["notification-obligations"]
+    cl_defn = definitions["dpa-clauses"]
+    sc_defn = definitions["scenarios"]
 
     resp_sep = overlay_mod.separator_of(resp)
     resp_items = overlay_mod.group_items(resp).get("resp", {}).get("leaves", [])
@@ -86,7 +89,10 @@ def build(
         raise KeyError(f"unknown scenario '{scenario_id}'")
     scenario = scenarios[scenario_id]
 
-    answers = overlay_mod.load_yaml(answers_path) or {}
+    answers = input_contracts.load_yaml_answers(
+        answers_path, "responsibility-answers.schema.json", "responsibility answers"
+    )
+    input_contracts.validate_responsibility_semantics(answers, resp)
     org_matrix = answers.get("matrix", {}) or {}
     resp_names = _role_names(resp)
     raci_names = _role_names(raci, "raci_roles")
@@ -133,6 +139,12 @@ def build(
         stage1_items=stage1,
         stage2_activities=stage2,
         stage3_branches=stage3,
+        provenance=contracts.make_provenance(
+            "render-runbook",
+            definitions=definitions,
+            input_paths=[answers_path],
+            overlay_paths=overlay_paths,
+        ),
     )
 
 
@@ -344,57 +356,77 @@ def _string_field(mapping: dict, field: str, label: str, *, required: bool = Fal
     return value
 
 
+def _responsibility_rows(model: RunbookModel) -> list[str]:
+    rows = []
+    for item in model.stage1_items:
+        star = " *" if item.get("focus") else ""
+        rows.append(
+            f"| {item['id']}{star} {item['text']} | {', '.join(item['accountable']) or '-'} | "
+            f"{', '.join(item['responsible']) or '-'} | {', '.join(item['gray']) or '-'} | {item['source']} |"
+        )
+    return rows
+
+
+def _activity_rows(model: RunbookModel) -> list[str]:
+    rows = []
+    for activity in model.stage2_activities:
+        star = " *" if activity.get("focus") else ""
+        rows.append(
+            f"| {activity['id']}{star} | {activity['text']} | "
+            f"{', '.join(activity['accountable']) or '-'} | "
+            f"{', '.join(activity['responsible']) or '-'} | {activity['sla'] or '-'} |"
+        )
+    return rows
+
+
+def _communication_rows(model: RunbookModel) -> list[str]:
+    return [
+        f"| {branch['audience']} | {branch['ref']} | {branch['owner']} | "
+        f"{branch['deadline'] or '-'} | {branch.get('trigger') or '-'} | "
+        f"{branch.get('message_boundary') or '-'} |"
+        for branch in model.stage3_branches
+    ]
+
+
 def render_text(model: RunbookModel) -> str:
-    s = model.scenario
+    scenario = model.scenario
     lines = [
         f"# 初動ランブック: {model.target}",
         "",
-        f"- シナリオ: {s.get('title', s.get('id'))}",
-        f"- 共有コンポーネント: {s.get('shared_component', '-')}",
-        f"- 想定影響ブランド数: {s.get('affected_brands', '-')}",
+        f"- シナリオ: {scenario.get('title', scenario.get('id'))}",
+        f"- 共有コンポーネント: {scenario.get('shared_component', '-')}",
+        f"- 想定影響ブランド数: {scenario.get('affected_brands', '-')}",
         "",
         "## Stage 1. 責任境界表 (この事故で誰が何の責任か)",
         "",
         "| 項目 | Accountable | Responsible | 都度協議 | 出典 |",
         "|---|---|---|---|---|",
     ]
-    for i in model.stage1_items:
-        star = " *" if i.get("focus") else ""
-        lines.append(
-            f"| {i['id']}{star} {i['text']} | {', '.join(i['accountable']) or '-'} | "
-            f"{', '.join(i['responsible']) or '-'} | {', '.join(i['gray']) or '-'} | {i['source']} |"
-        )
+    lines.extend(_responsibility_rows(model))
     lines += ["", "(* = 本シナリオの focus 項目)", "", "## Stage 2. 初動ランブック (Day 0-3 の順序)", ""]
     lines += ["| # | アクティビティ | Accountable | Responsible | SLA |", "|---|---|---|---|---|"]
-    for a in model.stage2_activities:
-        star = " *" if a.get("focus") else ""
-        lines.append(
-            f"| {a['id']}{star} | {a['text']} | {', '.join(a['accountable']) or '-'} | "
-            f"{', '.join(a['responsible']) or '-'} | {a['sla'] or '-'} |"
-        )
+    lines.extend(_activity_rows(model))
     lines += ["", "## Stage 3. Communication Tree (誰がいつ何を言うか)", ""]
     lines += [
         "| 宛先 | 参照 | 主体 | 期限 | 発火条件 | 伝える範囲 |",
         "|---|---|---|---|---|---|",
     ]
-    for b in model.stage3_branches:
-        lines.append(
-            f"| {b['audience']} | {b['ref']} | {b['owner']} | {b['deadline'] or '-'} | "
-            f"{b.get('trigger') or '-'} | {b.get('message_boundary') or '-'} |"
-        )
+    lines.extend(_communication_rows(model))
     lines.append("")
+    lines.append(f"<!-- {contracts.render_text_footer(model.provenance)} -->")
     return "\n".join(lines)
 
 
 def render_json(model: RunbookModel) -> str:
-    return json.dumps(
-        {
+    payload = {
             "target": model.target,
             "scenario": model.scenario.get("id"),
             "stage1_responsibility": model.stage1_items,
             "stage2_runbook": model.stage2_activities,
             "stage3_communication_tree": model.stage3_branches,
-        },
+        }
+    return json.dumps(
+        contracts.envelope(payload, model.provenance),
         indent=2,
         ensure_ascii=False,
     )

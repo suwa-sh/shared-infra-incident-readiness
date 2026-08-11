@@ -3,6 +3,7 @@
 # OpenAI の 2026-07-21 開示を素材にするが、固有環境を再現するものではない。
 # package proxy は、許可済み依存経路が意図せず外部到達へつながる一例として扱う。
 extends: shared-infra-tabletop-scenarios
+compatible_base_version: 1
 add:
   - id: scenarios.evaluation-containment
     title: 安全制御を弱めた内部評価 → 許可済み依存経路から第三者環境へ到達

@@ -28,6 +28,7 @@ AGENTIC_OV = [
     AGENTIC_DIR / "responsibility.yaml",
     AGENTIC_DIR / "incident-raci.yaml",
 ]
+ANSWER_OV = EVAL_OV + [AGENTIC_DIR / "responsibility.yaml"]
 ANSWERS = (
     REPO_ROOT / "examples" / "responsibility" / "sample-evaluation-containment.yaml"
 )
@@ -42,9 +43,11 @@ def test_official_evaluation_overlay_valid(path):
     assert result.ok, [f"{v.path}: {v.message}" for v in result.violations]
 
 
-def test_responsibility_overlay_scores_19_items_with_one_revise():
-    result = check_responsibility.check(ANSWERS, overlay_paths=[RESP_OV])
-    assert len(result.items) == 19
+def test_responsibility_overlays_score_24_items_with_one_revise():
+    result = check_responsibility.check(
+        ANSWERS, overlay_paths=[RESP_OV, AGENTIC_DIR / "responsibility.yaml"]
+    )
+    assert len(result.items) == 24
     verdicts = {item.id: item.verdict for item in result.items}
     assert verdicts["RB36"] == "revise"
     assert [item.id for item in result.items if item.verdict != "ok"] == ["RB36"]
@@ -52,7 +55,8 @@ def test_responsibility_overlay_scores_19_items_with_one_revise():
 
 
 def test_responsibility_without_overlay_remains_12_items():
-    assert len(check_responsibility.check(ANSWERS).items) == 12
+    with pytest.raises(ValueError, match="unknown item"):
+        check_responsibility.check(ANSWERS)
 
 
 def test_evaluation_roles_are_exposed_by_effective_definition():
@@ -127,7 +131,7 @@ def test_new_raci_rows_use_known_roles_and_strict_raci():
 
 
 def test_tabletop_focus_resolves_all_evaluation_refs():
-    model = tabletop.build("evaluation-containment", ANSWERS, EVAL_OV)
+    model = tabletop.build("evaluation-containment", ANSWERS, ANSWER_OV)
     focus = {item["ref"]: item for item in model.focus}
     for ref in [f"RB{i}" for i in range(30, 37)] + [f"AC{i}" for i in range(20, 27)]:
         assert focus[ref]["text"]
@@ -136,7 +140,7 @@ def test_tabletop_focus_resolves_all_evaluation_refs():
 
 
 def test_runbook_orders_containment_and_external_response_chains():
-    model = render_runbook.build(ANSWERS, "evaluation-containment", EVAL_OV)
+    model = render_runbook.build(ANSWERS, "evaluation-containment", ANSWER_OV)
     ids = [item["id"] for item in model.stage2_activities]
     assert ids.index("AC20") == ids.index("AC02") + 1
     assert ids[ids.index("AC20") : ids.index("AC20") + 4] == [
@@ -154,7 +158,7 @@ def test_runbook_orders_containment_and_external_response_chains():
 
 
 def test_communication_branch_default_and_org_deadline_override(tmp_path):
-    default_model = render_runbook.build(ANSWERS, "evaluation-containment", EVAL_OV)
+    default_model = render_runbook.build(ANSWERS, "evaluation-containment", ANSWER_OV)
     default_branch = next(
         item
         for item in default_model.stage3_branches
@@ -169,7 +173,7 @@ def test_communication_branch_default_and_org_deadline_override(tmp_path):
         + "\ncommunications:\n  affected-third-party:\n    deadline: 検知から30分以内\n",
         encoding="utf-8",
     )
-    org_model = render_runbook.build(answers, "evaluation-containment", EVAL_OV)
+    org_model = render_runbook.build(answers, "evaluation-containment", ANSWER_OV)
     org_branch = next(
         item
         for item in org_model.stage3_branches
@@ -182,7 +186,8 @@ def test_communication_branch_default_and_org_deadline_override(tmp_path):
     assert "外部影響が合理的に疑われた時点" in text
     assert "exploit 詳細と保全証拠は自動共有しない" in text
     rendered = json.loads(render_runbook.render_json(org_model))
-    rendered_branch = rendered["stage3_communication_tree"][-1]
+    assert rendered["contract_version"] == 1
+    rendered_branch = rendered["result"]["stage3_communication_tree"][-1]
     assert rendered_branch["deadline"] == "検知から30分以内"
     assert rendered_branch["trigger"] == "外部影響が合理的に疑われた時点"
     assert "exploit 詳細と保全証拠は自動共有しない" in rendered_branch[
@@ -292,7 +297,7 @@ def test_cli_rejects_unknown_communication_answer_id(tmp_path):
         "--scenario",
         "evaluation-containment",
     ]
-    for overlay in EVAL_OV:
+    for overlay in ANSWER_OV:
         argv += ["--overlay", str(overlay)]
     assert cli.main(argv) == 3
 
@@ -306,7 +311,7 @@ def test_cli_rejects_falsy_non_mapping_communications(tmp_path):
         "--scenario",
         "evaluation-containment",
     ]
-    for overlay in EVAL_OV:
+    for overlay in ANSWER_OV:
         argv += ["--overlay", str(overlay)]
     assert cli.main(argv) == 3
 
@@ -360,7 +365,7 @@ def test_cli_rejects_non_string_answer_deadline(tmp_path):
         "--scenario",
         "evaluation-containment",
     ]
-    for overlay in EVAL_OV:
+    for overlay in ANSWER_OV:
         argv += ["--overlay", str(overlay)]
     assert cli.main(argv) == 3
 
@@ -386,7 +391,7 @@ def test_answers_can_store_deadlines_for_multiple_loaded_scenarios(tmp_path):
         + "  second-party:\n    deadline: 60分以内\n",
         encoding="utf-8",
     )
-    overlays = EVAL_OV + [second_scenario]
+    overlays = ANSWER_OV + [second_scenario]
     evaluation = render_runbook.build(
         answers, "evaluation-containment", overlay_paths=overlays
     )

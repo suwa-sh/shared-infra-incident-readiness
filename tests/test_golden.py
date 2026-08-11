@@ -15,6 +15,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
+import pytest
+
 from siir import check_dpa as cd
 from siir import check_responsibility as cr
 from siir import list_definitions as ld
@@ -56,6 +59,8 @@ def test_tabletop_matches_golden(examples):
 
 def test_list_definitions_ids_and_roles_match_golden():
     golden = _golden("list-definitions.json")
+    assert golden["contract_version"] == 1
+    golden = golden["result"]
     summaries = ld.summarize()
     got = {s["name"]: s for s in summaries}
     want = {s["name"]: s for s in golden}
@@ -73,5 +78,23 @@ def test_dpa03_confirmed_sla_is_72h_not_dropped(examples):
     the migration untouched — this is the specific breach the golden record
     fixture exercises (102h elapsed > 72h)."""
     result = vr.validate(examples / "records" / "sample-incident.json", level="extended")
-    confirmed = next(f for f in result.sla_findings if f.ref == "DPA03" and f.sla_hours == 72.0)
+    confirmed = next(
+        finding
+        for finding in result.sla_findings
+        if finding.ref == "DPA03" and finding.sla_hours == pytest.approx(72.0)
+    )
     assert confirmed.status == "breach"
+
+
+def test_all_json_goldens_use_versioned_reproducible_envelope():
+    schema_path = Path(__file__).resolve().parents[1] / "schemas" / "output-envelope.schema.json"
+    validator = Draft202012Validator(json.loads(schema_path.read_text(encoding="utf-8")))
+    for path in sorted(GOLDEN.glob("*.json")):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        assert list(validator.iter_errors(document)) == [], path.name
+        assert document["contract_version"] == 1
+        provenance = document["provenance"]
+        assert provenance["tool_version"]
+        assert provenance["overlay_engine_version"]
+        for definition in provenance["definitions"].values():
+            assert definition["digest"].startswith("sha256:")

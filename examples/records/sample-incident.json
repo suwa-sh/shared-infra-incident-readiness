@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "incident_id": "INC-2026-0623",
   "title": "共用メール基盤 第三者製SW 脆弱性による不正アクセス",
   "detected_at": "2026-06-23T09:00:00+09:00",

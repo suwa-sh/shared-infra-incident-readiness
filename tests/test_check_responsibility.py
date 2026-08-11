@@ -6,7 +6,10 @@ from siir import check_responsibility as cr
 
 def _write(tmp_path, matrix, target="t"):
     p = tmp_path / "answers.yaml"
-    p.write_text(yaml.safe_dump({"target": target, "matrix": matrix}, allow_unicode=True), encoding="utf-8")
+    p.write_text(
+        yaml.safe_dump({"schema_version": 1, "target": target, "matrix": matrix}, allow_unicode=True),
+        encoding="utf-8",
+    )
     return p
 
 
@@ -77,3 +80,17 @@ def test_composite_ra_cell_is_recognized(tmp_path):
     assert rb01.verdict == "ok"
     assert rb01.count_a == 1
     assert rb01.has_r is True
+
+
+def test_unknown_role_is_input_error(tmp_path):
+    matrix = _full_ok()
+    matrix["RB01"] = {"invented_accountable": "A", "invented_responsible": "R"}
+    with pytest.raises(ValueError, match="unknown role"):
+        cr.check(_write(tmp_path, matrix))
+
+
+def test_unknown_item_is_input_error(tmp_path):
+    matrix = _full_ok()
+    matrix["RB999"] = {"principal_isp": "A"}
+    with pytest.raises(ValueError, match="unknown item"):
+        cr.check(_write(tmp_path, matrix))

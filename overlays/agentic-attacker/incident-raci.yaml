@@ -4,6 +4,7 @@
 # ここは初動の「具体活動」を足し、render-runbook の Stage 2 に反映させる。
 # id は AC16 番台 (AC01-15 は正本が使用)。
 extends: shared-infra-incident-raci
+compatible_base_version: 1
 add:
   - id: raci_act.AC16
     text: AI一次トリアージによる行動ログの自動分類

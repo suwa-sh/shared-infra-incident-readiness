@@ -20,7 +20,9 @@
 | 公式 overlay(脅威モデル拡張) | `overlays/<name>/*.yaml` | 公式配布の追加次元(例: `agentic-attacker`)。`examples/overlays/` は各社が真似るサンプルで別物 |
 | 契約 SLA(24h/72h) | `definitions/dpa-clauses.yaml` | 契約上の通知 SLA の正本 |
 | 法令・規制の通知期限 | `definitions/notification-obligations.yaml` | 法令クロックの正本 |
-| インシデント記録契約 | `schemas/incident-record.schema.json` | JSON Schema 契約正本 |
+| 回答 / インシデント記録契約 | `schemas/*.schema.json` | JSON Schema 契約正本 |
+| JSON 出力契約 | `schemas/output-envelope.schema.json` | `contract_version` / `provenance` / `result` の正本 |
+| 出典と再確認日 | `definitions/source-registry.yaml` | 定義値を支える一次資料と freshness の正本 |
 | 説明書 | `docs/*.md` | 上記の解説。**定義の値は二重保持しない**(リンク参照) |
 | 動く入口 | `bin/siir` / `src/siir/` / `examples/` | 上記を消費する CLI と入力サンプル |
 
@@ -43,7 +45,7 @@
 
 ### overlay ルーティング(複数定義コマンド)
 
-複数の定義を同時に読むコマンド(`tabletop` / `render-runbook` / `list-definitions`)は、`definitions.route_overlays()` が各 overlay の `extends` を見て**適用先の定義へ振り分ける**。どの定義にも一致しない `extends` は入力エラー(exit 3)でありサイレントに捨てない。単一定義コマンド(`check-responsibility` / `check-dpa` / `validate-record`)はルーティングせず、不一致 overlay を渡したら明示エラーにする(従来どおり)。
+複数の定義を同時に読むコマンド(`tabletop` / `render-runbook` / `list-definitions` / `validate-record`)は、`definitions.route_overlays()` が各 overlay の `extends` を見て**適用先の定義へ振り分ける**。どの定義にも一致しない `extends` は入力エラー(exit 3)でありサイレントに捨てない。単一定義コマンド(`check-responsibility` / `check-dpa`)はルーティングせず、不一致 overlay を渡したら明示エラーにする。
 
 ### `extension_points` 宣言と実装の同期義務
 
@@ -66,7 +68,7 @@
 ## 編集規約
 
 - **本文は日本語**。多言語 README は `README.md`=英語(入口)/ `README.ja.md`=日本語(正本)でバッジ直下に相互リンク
-- 図は **mermaid** で書き、追加・変更したら `npx md-mermaid-lint docs/*.md` で検証
+- 図は **mermaid** で書き、追加・変更したら `npm ci && npm run lint:mermaid` で検証
 - 文体は全 doc で統一(**ですます調**)。テクニカルライティング(タスク指向見出し / 能動・短文 / 逆ピラミッド / 箇条書きの並列性)に従う
 - 専門用語・略語(DPA / RACI / SLA 等)は初出で 1 行説明を添える。CLI は README に**想定ワークフロー(何を用意→どの順で実行→出力をどう読む)**を必ず置く
 - コメントは日本語可。テストは AAA、命名は `test_<対象>_<条件>_<期待>`
@@ -84,7 +86,9 @@ python3 -m venv .venv
 .venv/bin/pip install -e ".[test]"
 .venv/bin/pytest                           # overlay / scoring / SLA / runbook の境界条件
 python scripts/check_docs.py --cli         # link / anchor / image tag / 記載 CLI
-npx md-mermaid-lint docs/*.md              # mermaid 構文
+npm ci && npm run lint:mermaid              # lock 済み mermaid 構文検査
+python scripts/check_sources.py             # 出典 coverage / freshness
+qlty check --all --no-fix --no-progress --no-upgrade-check
 python scripts/check_docs.py --container   # 公開イメージと /app パス。Docker / network 必須
 ```
 
@@ -93,6 +97,7 @@ python scripts/check_docs.py --container   # 公開イメージと /app パス�
 ## 横断的な注意点
 
 - **exit code 規約**: 0 ok / 1 partial(yellow)/ 2 block(red, SLA 違反・必須欠落・overlay 却下)/ 3 入力エラー。`tests/` で固定する
+- **契約版**: 回答と事故記録は `schema_version`、JSON 出力は `contract_version` を必須とする。破壊的変更では major version と `MIGRATION.md` を更新する
 - **依存パッケージの extras**: `jsonschema[format-nongpl]` で `"format": "date-time"` 検証を有効化(素の `jsonschema` だと通知時刻の検証が no-op になる)
 - **GitHub Actions** は SHA ピン + workflow トップ `permissions: {}` + `persist-credentials: false`
 - **コマンド名は既知略語との衝突を pre-check 済み**(本リポは `siir` ← `shared-infra-incident-readiness` 由来)

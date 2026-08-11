@@ -61,6 +61,7 @@ The CLI reports `tbd` as `REVISE`, which preserves the uncertainty without treat
 Write the answers to a temporary YAML file.
 
 ```yaml
+schema_version: 1
 target: <platform name>
 matrix:
   RB01:
@@ -83,6 +84,8 @@ bin/siir check-responsibility \
 ```
 
 Capture both stdout and the exit code.
+Read `result` only after confirming `contract_version == 1`. Retain
+`provenance` with the assessment when the result is used as evidence.
 
 ### 5. Check DPA coverage when requested
 

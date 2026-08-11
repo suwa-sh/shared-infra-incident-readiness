@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shared-infra-incident-readiness"
-version = "0.3.0"
+version = "1.0.0"
 description = "Diagnostic tool and extensible framework for the first 30 minutes of a shared-infrastructure incident: responsibility boundaries, DPA clauses, notification SLA, and Tabletop exercises."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,6 +27,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security",
 ]
 dependencies = [
@@ -38,7 +40,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8.0,<10.0"]
+test = [
+    "markdown-it-py>=4.0,<5.0",
+    "pytest>=8.0,<10.0",
+]
 
 [project.scripts]
 siir = "siir.cli:main"

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/suwa-sh/shared-infra-incident-readiness/schemas/output-envelope.schema.json",
+  "title": "SIIR output envelope",
+  "type": "object",
+  "required": ["contract_version", "provenance", "result"],
+  "properties": {
+    "contract_version": {"const": 1},
+    "provenance": {
+      "type": "object",
+      "required": ["command", "tool_version", "overlay_engine_version", "definitions", "inputs", "overlays"],
+      "properties": {
+        "command": {"type": "string"},
+        "tool_version": {"type": "string"},
+        "overlay_engine_version": {"type": "string"},
+        "definitions": {"type": "object"},
+        "inputs": {"type": "array"},
+        "overlays": {"type": "array"}
+      },
+      "additionalProperties": false
+    },
+    "result": {}
+  },
+  "additionalProperties": false
+}

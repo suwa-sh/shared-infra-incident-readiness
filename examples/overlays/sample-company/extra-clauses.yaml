@@ -4,6 +4,7 @@
 #   - strengthen: tighten the breach-notification SLA from 24h to 12h
 #                 (direction: lower => stricter; weakening would be rejected)
 extends: shared-infra-dpa-clauses
+compatible_base_version: 1
 add:
   - id: clauses.DPA11
     title: 暗号鍵の地理的分離

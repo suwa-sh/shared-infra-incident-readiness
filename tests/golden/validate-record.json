@@ -1,42 +1,67 @@
 {
-  "level": "extended",
-  "conclusion": "BLOCK",
-  "schema_violations": [],
-  "sla_findings": [
-    {
-      "ref": "DPA03",
-      "status": "ok",
-      "message": "委託先→委託元 漏えい通知SLA: sent 11.0h after awareness (<= 24h)",
-      "elapsed_hours": 11.0,
-      "sla_hours": 24.0
+  "contract_version": 1,
+  "provenance": {
+    "command": "validate-record",
+    "tool_version": "1.0.0",
+    "overlay_engine_version": "0.1.0",
+    "definitions": {
+      "dpa-clauses": {
+        "version": 1,
+        "digest": "sha256:375b54347e3443a2be9fbd8172a8b169ee58cd94a06b3f712f23eb2e34d98f31"
+      },
+      "notification-obligations": {
+        "version": 1,
+        "digest": "sha256:a45792bdd2093f06868a7fb7008525c25291fb6182576bc745b6484c7c917fc4"
+      }
     },
-    {
-      "ref": "DPA03",
-      "status": "breach",
-      "message": "委託先→委託元 漏えい通知SLA (確報): sent 102.0h after awareness, SLA is 72h",
-      "elapsed_hours": 102.0,
-      "sla_hours": 72.0
-    },
-    {
-      "ref": "OB01",
-      "status": "info",
-      "message": "個人情報保護委員会への速報: non-numeric deadline; review manually",
-      "elapsed_hours": null,
-      "sla_hours": null
-    },
-    {
-      "ref": "OB03",
-      "status": "info",
-      "message": "総務省への重大事故報告: non-numeric deadline; review manually",
-      "elapsed_hours": null,
-      "sla_hours": null
-    },
-    {
-      "ref": "OB04",
-      "status": "pending",
-      "message": "本人への通知: not sent yet (pending)",
-      "elapsed_hours": null,
-      "sla_hours": null
-    }
-  ]
+    "inputs": [
+      {
+        "name": "sample-incident.json",
+        "digest": "sha256:7cde8aa1a7539a2419c14a3b3fd9d444eb99825416796368947ff1116c2ab068"
+      }
+    ],
+    "overlays": []
+  },
+  "result": {
+    "level": "extended",
+    "conclusion": "BLOCK",
+    "schema_violations": [],
+    "sla_findings": [
+      {
+        "ref": "DPA03",
+        "status": "ok",
+        "message": "委託先→委託元 漏えい通知SLA: sent 11.0h after awareness (<= 24h)",
+        "elapsed_hours": 11.0,
+        "sla_hours": 24.0
+      },
+      {
+        "ref": "DPA03",
+        "status": "breach",
+        "message": "委託先→委託元 漏えい通知SLA (確報): sent 102.0h after awareness, SLA is 72h",
+        "elapsed_hours": 102.0,
+        "sla_hours": 72.0
+      },
+      {
+        "ref": "OB01",
+        "status": "info",
+        "message": "個人情報保護委員会への速報: non-numeric deadline; review manually",
+        "elapsed_hours": null,
+        "sla_hours": null
+      },
+      {
+        "ref": "OB03",
+        "status": "info",
+        "message": "総務省への重大事故報告: non-numeric deadline; review manually",
+        "elapsed_hours": null,
+        "sla_hours": null
+      },
+      {
+        "ref": "OB04",
+        "status": "pending",
+        "message": "本人への通知: not sent yet (pending)",
+        "elapsed_hours": null,
+        "sla_hours": null
+      }
+    ]
+  }
 }

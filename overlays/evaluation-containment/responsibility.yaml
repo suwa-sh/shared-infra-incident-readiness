@@ -12,6 +12,7 @@
 #
 # RB30-RB36 はこの overlay 専用とし、既存の RB01-RB24 と衝突させない。
 extends: shared-infra-responsibility-matrix
+compatible_base_version: 1
 add:
   - id: roles.evaluation_program_owner
     name: 評価プログラム責任者

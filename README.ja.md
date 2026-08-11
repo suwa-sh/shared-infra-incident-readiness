@@ -40,11 +40,11 @@ SIIR は、共用メール基盤事案の公開情報を基に作成しました
 セットアップは不要です。
 
 ```bash
-docker run --rm \
+docker run --rm --read-only \
   ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   --version
 
-docker run --rm \
+docker run --rm --read-only \
   ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-responsibility \
   examples/responsibility/sample-oem-mail.yaml
@@ -72,8 +72,8 @@ Docker で自社ファイルを読むため、現在のディレクトリを `/d
 
 ```bash
 siir() {
-  docker run --rm \
-    -v "$PWD:/data" \
+  docker run --rm --read-only \
+    --mount type=bind,src="$PWD",dst=/data,readonly \
     -w /data \
     ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
     "$@"
@@ -136,6 +136,10 @@ CLI はスキーマを先に検証し、その後で数値化できる通知期�
 「遅滞なく」のように数値化していない期限は、自動で合否を決めず、手動確認へ回します。
 期限の管理方法は [初動 RACI と通知期限](docs/02_incident_raci_and_sla.md) を参照してください。
 
+回答 YAML と事故記録にはトップレベルの `schema_version: 1` が必要です。
+`--format json` の出力は `contract_version`、再現情報の `provenance`、判定本体の
+`result` で構成します。自動処理は `contract_version == 1` を確認してから `result` を読みます。
+
 ### 5. 有効な定義を確認する
 
 基本定義と指定した overlay を統合した結果は、`list-definitions` で確認できます。
@@ -188,8 +192,12 @@ bin/siir render-runbook \
   --scenario evaluation-containment \
   --overlay overlays/evaluation-containment/scenarios.yaml \
   --overlay overlays/evaluation-containment/responsibility.yaml \
-  --overlay overlays/evaluation-containment/incident-raci.yaml
+  --overlay overlays/evaluation-containment/incident-raci.yaml \
+  --overlay overlays/agentic-attacker/responsibility.yaml
 ```
+
+この記入例は同じ事故を両側から扱うため、被害側の RB20 から RB24 も含みます。
+そのため `agentic-attacker` の責任 overlay も指定します。
 
 詳細は [evaluation-containment overlay](docs/07_evaluation_containment_overlay.md) を参照してください。
 
@@ -225,6 +233,11 @@ siir check-dpa \
 | 演習の設計者 | [Tabletop 演習と初動ランブック](docs/04_tabletop_and_runbook.md) |
 | SaaS の委託運用者 | [SaaS 委託先の記入例](docs/05_worked_example.md) |
 | AI セキュリティ担当 | [agentic-attacker](docs/06_agentic_attacker_overlay.md) と [evaluation-containment](docs/07_evaluation_containment_overlay.md) |
+| 運用・監査担当 | [安全な実行、証跡保管、更新とロールバック](docs/08_operations_and_data_handling.md) |
+
+入力には氏名、認証情報、完全なログなど不要な機密情報を入れないでください。SIIR 自体は
+入力を外部送信しませんが、CI、ログ収集、呼び出し元の AI エージェントは別のデータ境界です。
+保存する JSON 結果は暗号化、最小権限、保持期限を適用します。
 
 ## リポジトリの構成
 
@@ -242,12 +255,18 @@ shared-infra-incident-readiness/
 ## 開発
 
 ```bash
-pytest tests/
+.venv/bin/pytest
 bin/siir --help
-npx md-mermaid-lint docs/*.md
+npm ci
+npm run lint:mermaid
 python scripts/check_docs.py --cli
+python scripts/check_sources.py
 python scripts/check_docs.py --container
+qlty check --all --no-fix --no-progress --no-upgrade-check
 ```
+
+互換性、移行、サポート、変更履歴は [COMPATIBILITY.md](COMPATIBILITY.md)、
+[MIGRATION.md](MIGRATION.md)、[SUPPORT.md](SUPPORT.md)、[CHANGELOG.md](CHANGELOG.md) を参照してください。
 
 ## ライセンス
 

@@ -4,6 +4,7 @@
 # 「自律エージェント型攻撃者 / 週末横移動 / 商用APIが解析を拒否する分岐」を
 # 含む、防御側の判断訓練シナリオ。攻撃手順は扱わず、判断の分岐だけを注入する。
 extends: shared-infra-tabletop-scenarios
+compatible_base_version: 1
 add:
   - id: "scenarios.agentic-attacker"
     title: 自律AIエージェント型攻撃者 → 週末横移動・商用APIの解析拒否

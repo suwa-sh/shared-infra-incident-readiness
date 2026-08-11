@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/suwa-sh/shared-infra-incident-readiness/schemas/dpa-answers.schema.json",
+  "title": "SIIR DPA answers",
+  "type": "object",
+  "required": ["schema_version", "target", "clauses"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "target": {"type": "string", "minLength": 1},
+    "clauses": {
+      "type": "object",
+      "propertyNames": {"pattern": "^DPA[0-9]+$"},
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["present", "partial", "missing"]
+      }
+    }
+  },
+  "additionalProperties": false
+}

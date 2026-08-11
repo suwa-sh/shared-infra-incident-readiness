@@ -26,6 +26,8 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 from . import definitions as defn_mod
+from . import contracts
+from . import input_contracts
 import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
@@ -52,6 +54,7 @@ class RecordResult:
     level: str
     schema_violations: list[SchemaViolation] = field(default_factory=list)
     sla_findings: list[SlaFinding] = field(default_factory=list)
+    provenance: dict = field(default_factory=dict)
 
     @property
     def conclusion(self) -> str:
@@ -113,22 +116,54 @@ def validate(
         raise ValueError(f"unknown level: {level}; expected 'minimum' or 'extended'")
     schema_path = Path(schema_path) if schema_path else DEFAULT_SCHEMA
     data = json.loads(Path(record_path).read_text(encoding="utf-8"))
+    input_contracts.validate_schema_version(data, "incident record")
 
-    result = RecordResult(level=level)
+    result = RecordResult(
+        level=level,
+        provenance=contracts.make_provenance(
+            "validate-record", input_paths=[record_path]
+        ),
+    )
 
     validator = _build_validator(schema_path, level)
     for err in validator.iter_errors(data):
         path = "/" + "/".join(str(p) for p in err.absolute_path)
         result.schema_violations.append(SchemaViolation(path=path, message=err.message))
 
-    ob_defn = defn_mod.load("notification-obligations", overlay_paths=overlay_paths)
+    # Do not traverse structurally invalid data. Schema findings are a BLOCK;
+    # continuing would turn a controlled diagnosis into AttributeError/TypeError.
+    if result.schema_violations:
+        return result
+
+    routed = defn_mod.route_overlays(overlay_paths)
+    unsupported = {
+        key: paths
+        for key, paths in routed.items()
+        if key not in {"notification-obligations", "dpa-clauses"} and paths
+    }
+    if unsupported:
+        names = ", ".join(sorted(unsupported))
+        raise ValueError(f"validate-record received overlay(s) for unsupported definition(s): {names}")
+
+    ob_defn = defn_mod.load(
+        "notification-obligations", overlay_paths=routed["notification-obligations"]
+    )
     ob_sep = overlay_mod.separator_of(ob_defn)
     obligations = {
         defn_mod.local_id(o["id"], ob_sep): o
         for o in overlay_mod.group_items(ob_defn).get("obligations", {}).get("leaves", [])
     }
 
-    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=overlay_paths)
+    cl_defn = defn_mod.load("dpa-clauses", overlay_paths=routed["dpa-clauses"])
+    result.provenance = contracts.make_provenance(
+        "validate-record",
+        definitions={
+            "notification-obligations": ob_defn,
+            "dpa-clauses": cl_defn,
+        },
+        input_paths=[record_path],
+        overlay_paths=overlay_paths,
+    )
     cl_sep = overlay_mod.separator_of(cl_defn)
     clauses = {
         defn_mod.local_id(c["id"], cl_sep): c
@@ -138,7 +173,16 @@ def validate(
     detected = _parse_dt(data.get("detected_at"))
     confirmed = _parse_dt(data.get("confirmed_at"))
 
-    for entry in data.get("notifications", []) or []:
+    notifications = data.get("notifications", []) or []
+    if not notifications:
+        result.sla_findings.append(
+            SlaFinding(
+                ref="notifications",
+                status="info",
+                message="no notification entries; confirm applicability before treating this record as ready",
+            )
+        )
+    for entry in notifications:
         result.sla_findings.append(_evaluate_entry(entry, obligations, clauses, detected, confirmed))
 
     return result
@@ -147,6 +191,10 @@ def validate(
 def _evaluate_entry(entry: dict, obligations: dict, clauses: dict, detected, confirmed) -> SlaFinding:
     """Evaluate one notification entry against its referenced SLA."""
     ref = entry.get("obligation") or entry.get("clause") or "?"
+    if ref.startswith("OB") and ref not in obligations:
+        raise ValueError(f"notification references unknown obligation '{ref}'")
+    if ref.startswith("DPA") and ref not in clauses:
+        raise ValueError(f"notification references unknown clause '{ref}'")
     stage = entry.get("stage", "first")
     sla_hours, anchor, label = _sla_for_ref(ref, stage, obligations, clauses)
     anchor_dt = confirmed if anchor == "confirmation" and confirmed else detected
@@ -204,12 +252,12 @@ def render_text(result: RecordResult) -> str:
         lines.append(f"  {_MARK.get(f.status, '[??]')} {f.ref} {f.message}")
     lines.append("")
     lines.append(f"Conclusion: {result.conclusion}")
+    lines.extend(["", contracts.render_text_footer(result.provenance)])
     return "\n".join(lines)
 
 
 def render_json(result: RecordResult) -> str:
-    return json.dumps(
-        {
+    payload = {
             "level": result.level,
             "conclusion": result.conclusion,
             "schema_violations": [{"path": v.path, "message": v.message} for v in result.schema_violations],
@@ -223,7 +271,9 @@ def render_json(result: RecordResult) -> str:
                 }
                 for f in result.sla_findings
             ],
-        },
+        }
+    return json.dumps(
+        contracts.envelope(payload, result.provenance),
         indent=2,
         ensure_ascii=False,
     )

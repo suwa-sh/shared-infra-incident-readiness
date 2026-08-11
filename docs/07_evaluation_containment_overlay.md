@@ -23,7 +23,8 @@
 ```bash
 bin/siir check-responsibility \
   examples/responsibility/sample-evaluation-containment.yaml \
-  --overlay overlays/evaluation-containment/responsibility.yaml
+  --overlay overlays/evaluation-containment/responsibility.yaml \
+  --overlay overlays/agentic-attacker/responsibility.yaml
 ```
 
 Tabletop またはランブックを生成する場合は、3 ファイルをすべて指定します。
@@ -34,10 +35,13 @@ bin/siir render-runbook \
   --scenario evaluation-containment \
   --overlay overlays/evaluation-containment/scenarios.yaml \
   --overlay overlays/evaluation-containment/responsibility.yaml \
-  --overlay overlays/evaluation-containment/incident-raci.yaml
+  --overlay overlays/evaluation-containment/incident-raci.yaml \
+  --overlay overlays/agentic-attacker/responsibility.yaml
 ```
 
-シナリオファイルだけでは、RB30 から RB36 の責任者と、AC20 から AC26 の順序を解決できません。
+記入例は同じ事故の被害側も扱うため、RB20 から RB24 を含みます。その ID を解決する
+`agentic-attacker` の責任 overlay も指定します。シナリオファイルだけでは、RB30 から RB36 の
+責任者と、AC20 から AC26 の順序を解決できません。
 参照先がない場合、`render-runbook` は入力エラーで終了します。
 
 ## Concept

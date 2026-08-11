@@ -9,6 +9,7 @@
 # 実行例 (この 1 項目が gray になり、結論 REVISE / exit 1 を示す):
 #   bin/siir check-responsibility examples/responsibility/sample-agentic.yaml \
 #     --overlay overlays/agentic-attacker/responsibility.yaml
+schema_version: 1
 target: マーケ自動化運用者 (顧客 / 運用者 / SaaS の三層) + AI攻撃者 readiness
 matrix:
   RB01: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }

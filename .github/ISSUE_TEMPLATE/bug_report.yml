@@ -1,0 +1,34 @@
+name: Bug report
+description: SIIR の誤判定、入力エラー、文書不整合を報告します。
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 脆弱性は公開 Issue ではなく SECURITY.md の窓口へ報告してください。
+  - type: input
+    id: version
+    attributes:
+      label: SIIR version
+      description: `siir --version` の出力を記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: 機密情報を除いた最小の入力、コマンド、exit code を記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

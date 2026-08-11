@@ -9,6 +9,7 @@
 #
 # 「自分(運用者=委託先)が何を SLA 化・通知すべきか」を 1 度埋めて明文化する。
 # 全 12 項目を埋めた "良い記入例"。check-responsibility が PASS することを示す。
+schema_version: 1
 target: マーケ自動化運用者 (顧客 / 運用者 / SaaS の三層)
 matrix:
   RB01: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }

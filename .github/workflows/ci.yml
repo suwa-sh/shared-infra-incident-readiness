@@ -16,7 +16,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,18 +55,41 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "20"
+          node-version: "22"
+          cache: npm
+
+      - name: Install documentation dependencies
+        run: npm ci
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
+      - name: Install documentation checker dependencies
+        run: pip install ".[test]"
+
       - name: Check links, anchors, and image tags
         run: python scripts/check_docs.py
 
-      - name: Lint Mermaid diagrams
-        run: npx --yes md-mermaid-lint docs/*.md
+      - name: Check source coverage and review dates
+        run: python scripts/check_sources.py
 
-      - name: Check released container boundary
-        run: python scripts/check_docs.py --container
+      - name: Lint Mermaid diagrams
+        run: npm run lint:mermaid
+
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Qlty CLI
+        uses: qltysh/qlty-action/install@08a0a862c159eae9b9003081da6663d96efef637 # v2.3.0
+
+      - name: Run configured quality and security checks
+        run: qlty check --all --no-fix --no-progress --no-upgrade-check

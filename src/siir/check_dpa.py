@@ -15,10 +15,12 @@ A required clause that is ``missing`` => BLOCK; ``partial`` => REVISE.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import definitions as defn_mod
+from . import contracts
+from . import input_contracts
 import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
@@ -39,6 +41,7 @@ class DpaResult:
     target: str
     clauses: list[ClauseResult]
     conclusion: str  # PASS | REVISE | BLOCK
+    provenance: dict = field(default_factory=dict)
 
     @property
     def score(self) -> float:
@@ -69,7 +72,10 @@ def check(
         overlay_paths=overlay_paths,
         definition_path_override=definition_path_override,
     )
-    answers = overlay_mod.load_yaml(answers_path) or {}
+    answers = input_contracts.load_yaml_answers(
+        answers_path, "dpa-answers.schema.json", "DPA answers"
+    )
+    input_contracts.validate_dpa_semantics(answers, defn)
     statuses = answers.get("clauses", {}) or {}
 
     sep = overlay_mod.separator_of(defn)
@@ -101,6 +107,12 @@ def check(
         target=answers.get("target", str(answers_path)),
         clauses=clauses,
         conclusion=conclusion,
+        provenance=contracts.make_provenance(
+            "check-dpa",
+            definitions={"dpa-clauses": defn},
+            input_paths=[answers_path],
+            overlay_paths=overlay_paths,
+        ),
     )
 
 
@@ -114,12 +126,12 @@ def render_text(result: DpaResult) -> str:
         lines.append(f"{_MARK.get(c.status, '[??]')} {c.id} {c.title}: {c.status.upper()} ({req})")
     lines.append("")
     lines.append(f"Conclusion: {result.conclusion}")
+    lines.extend(["", contracts.render_text_footer(result.provenance)])
     return "\n".join(lines)
 
 
 def render_json(result: DpaResult) -> str:
-    return json.dumps(
-        {
+    payload = {
             "target": result.target,
             "conclusion": result.conclusion,
             "score": result.score,
@@ -127,7 +139,9 @@ def render_json(result: DpaResult) -> str:
                 {"id": c.id, "title": c.title, "required": c.required, "status": c.status}
                 for c in result.clauses
             ],
-        },
+        }
+    return json.dumps(
+        contracts.envelope(payload, result.provenance),
         indent=2,
         ensure_ascii=False,
     )

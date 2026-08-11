@@ -40,32 +40,32 @@ No setup — pull the published image and run it. The bundled samples work out
 of the box:
 
 ```bash
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 --version
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 --version
 
 # 1. Score a filled responsibility-boundary matrix
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-responsibility examples/responsibility/sample-oem-mail.yaml
 
 # 2. Check DPA clause coverage
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-dpa examples/dpa/sample-dpa-answers.yaml
 
 # 3. Validate an incident record + its notification SLA timeline
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   validate-record examples/records/sample-incident.json --level extended
 
 # 4. Render a 3-stage runbook (responsibility table -> runbook -> comms tree)
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
 
 # 5. Render a Tabletop exercise program
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
 
 # 6. Validate an overlay (add / strengthen only) and inspect definitions
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-overlay examples/overlays/sample-company/extra-clauses.yaml
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 list-definitions
+docker run --rm --read-only ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 list-definitions
 ```
 
 Use `list-definitions --format json --detail` when an agent or integration
@@ -80,13 +80,19 @@ Every command returns a deterministic exit code so you can gate CI on it:
 notifications) · **2** block (gaps, missing clauses, SLA breach, rejected
 overlay) · **3** input error (file missing / parse error).
 
+YAML answers and incident records require top-level `schema_version: 1` in the
+current source version. JSON output is an envelope with `contract_version`,
+reproducibility metadata in `provenance`, and the verdict under `result`.
+Consumers must check `contract_version == 1` before reading `result`.
+
 ## Usage workflow
 
 The commands run against *your* data. Mount the directory that holds your files
 into the container. A shell function keeps the rest of this guide readable:
 
 ```bash
-siir() { docker run --rm -v "$PWD:/data" -w /data \
+siir() { docker run --rm --read-only \
+  --mount type=bind,src="$PWD",dst=/data,readonly -w /data \
   ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 "$@"; }
 ```
 
@@ -153,7 +159,9 @@ With Docker, the bundled overlays live under `/app` inside the image (your own
 answers are mounted at `/data`):
 
 ```bash
-docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+docker run --rm --read-only \
+  --mount type=bind,src="$PWD",dst=/data,readonly \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-responsibility /data/my-answers.yaml \
   --overlay /app/overlays/agentic-attacker/responsibility.yaml
 ```
@@ -177,17 +185,22 @@ python3 -m venv .venv
 .venv/bin/pip install -e .
 ```
 
-Use the responsibility file alone for scoring. Use all three files when
-rendering the scenario, so responsibility owners and activity ordering are both
-resolved:
+Use both responsibility overlays for the bundled answer sample. Use the three
+evaluation files plus the agentic responsibility file when rendering the
+scenario, so every answer ID, responsibility owner, and activity order resolves:
 
 ```bash
 siir render-runbook examples/responsibility/sample-evaluation-containment.yaml \
   --scenario evaluation-containment \
   --overlay overlays/evaluation-containment/scenarios.yaml \
   --overlay overlays/evaluation-containment/responsibility.yaml \
-  --overlay overlays/evaluation-containment/incident-raci.yaml
+  --overlay overlays/evaluation-containment/incident-raci.yaml \
+  --overlay overlays/agentic-attacker/responsibility.yaml
 ```
+
+The bundled answer sample covers both sides of the incident and therefore also
+contains victim-side RB20–RB24. The agentic-attacker responsibility overlay is
+required to resolve those IDs.
 
 See [`docs/07_evaluation_containment_overlay.md`](docs/07_evaluation_containment_overlay.md)
 for the responsibility model, communication deadline override, and primary sources.
@@ -200,6 +213,7 @@ for the responsibility model, communication deadline override, and primary sourc
 | A **legal / procurement** owner of an outsourcing contract | [`docs/03_dpa_clauses.md`](docs/03_dpa_clauses.md) — check the 10 mandatory DPA clauses |
 | An **engineer / SRE** wiring an incident record pipeline | [`schemas/incident-record.schema.json`](schemas/incident-record.schema.json) + [`docs/02_incident_raci_and_sla.md`](docs/02_incident_raci_and_sla.md) |
 | A **consultant / proposal author** | All `docs/` + the overlay model — clone, overlay in private, present client-specific scoring |
+| An **operations / audit owner** | [`docs/08_operations_and_data_handling.md`](docs/08_operations_and_data_handling.md) — execution boundaries, evidence, upgrade and rollback |
 
 ## What's in this repo
 
@@ -235,12 +249,23 @@ operations are allowed, declared per definition in `extension_points`:
 ## Development
 
 ```bash
-pytest tests/                  # boundary conditions, exit codes
+.venv/bin/pytest               # boundary conditions, exit codes
 bin/siir --help                # CLI smoke
-npx md-mermaid-lint docs/*.md  # diagram syntax
+npm ci                         # exact documentation tool versions
+npm run lint:mermaid           # diagram syntax
 python scripts/check_docs.py --cli       # links, image tags, documented workflows
+python scripts/check_sources.py          # authority coverage and review dates
 python scripts/check_docs.py --container # released image and documented /app paths
+qlty check --all --no-fix --no-progress --no-upgrade-check
 ```
+
+Incident inputs can contain confidential data. Minimise and redact them, use
+read-only mounts, and protect retained JSON evidence with encryption, least
+privilege, and a retention deadline. The CLI itself makes no network calls;
+CI, log collectors, and calling AI agents are separate data boundaries. See the
+[operations guide](docs/08_operations_and_data_handling.md),
+[compatibility policy](COMPATIBILITY.md), [migration guide](MIGRATION.md), and
+[support policy](SUPPORT.md).
 
 ## License
 

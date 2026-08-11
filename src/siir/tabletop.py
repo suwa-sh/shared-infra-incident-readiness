@@ -14,7 +14,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import check_responsibility as cr
+from . import contracts
 from . import definitions as defn_mod
+from . import input_contracts
 import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
@@ -25,6 +27,7 @@ class TabletopModel:
     scenario: dict
     focus: list[dict] = field(default_factory=list)
     target: str | None = None
+    provenance: dict = field(default_factory=dict)
 
 
 def _owner_label(cells: dict, names: dict[str, str]) -> str:
@@ -47,8 +50,8 @@ def build(
     answers_path: str | Path | None = None,
     overlay_paths: list[str | Path] | None = None,
 ) -> TabletopModel:
-    routed = defn_mod.route_overlays(overlay_paths)
-    sc_defn = defn_mod.load("scenarios", overlay_paths=routed["scenarios"])
+    definitions = defn_mod.load_all(overlay_paths)
+    sc_defn = definitions["scenarios"]
     sc_sep = overlay_mod.separator_of(sc_defn)
     scenarios = {
         defn_mod.local_id(s["id"], sc_sep): dict(s, id=defn_mod.local_id(s["id"], sc_sep))
@@ -58,7 +61,7 @@ def build(
         raise KeyError(f"unknown scenario '{scenario_id}'")
     scenario = scenarios[scenario_id]
 
-    resp = defn_mod.load("responsibility-matrix", overlay_paths=routed["responsibility-matrix"])
+    resp = definitions["responsibility-matrix"]
     resp_sep = overlay_mod.separator_of(resp)
     resp_groups = overlay_mod.group_items(resp)
     item_by_id = {defn_mod.local_id(i["id"], resp_sep): i for i in resp_groups.get("resp", {}).get("leaves", [])}
@@ -70,7 +73,7 @@ def build(
     # RACI activities: focus_items may reference AC ids (e.g. AC16-AC18 from the
     # agentic-attacker overlay). Resolve their text/owner from incident-raci so
     # the exercise table is not blank for activity refs.
-    raci = defn_mod.load("incident-raci", overlay_paths=routed["incident-raci"])
+    raci = definitions["incident-raci"]
     raci_sep = overlay_mod.separator_of(raci)
     raci_groups = overlay_mod.group_items(raci)
     act_by_id = {defn_mod.local_id(a["id"], raci_sep): a for a in raci_groups.get("raci_act", {}).get("leaves", [])}
@@ -82,7 +85,10 @@ def build(
     org_matrix = {}
     target = None
     if answers_path:
-        answers = overlay_mod.load_yaml(answers_path) or {}
+        answers = input_contracts.load_yaml_answers(
+            answers_path, "responsibility-answers.schema.json", "responsibility answers"
+        )
+        input_contracts.validate_responsibility_semantics(answers, resp)
         org_matrix = answers.get("matrix", {}) or {}
         target = answers.get("target")
 
@@ -115,7 +121,17 @@ def build(
         else:
             focus.append({"ref": ref, "text": "", "owner": None})
 
-    return TabletopModel(scenario=scenario, focus=focus, target=target)
+    return TabletopModel(
+        scenario=scenario,
+        focus=focus,
+        target=target,
+        provenance=contracts.make_provenance(
+            "tabletop",
+            definitions=definitions,
+            input_paths=[answers_path] if answers_path else [],
+            overlay_paths=overlay_paths,
+        ),
+    )
 
 
 def render_text(model: TabletopModel) -> str:
@@ -141,19 +157,21 @@ def render_text(model: TabletopModel) -> str:
         gray = ", ".join(f.get("gray", []) or []) or "-"
         lines.append(f"| {f['ref']} | {f.get('text', '')} | {f.get('owner') or '-'} | {gray} | {f.get('source', '-')} |")
     lines.append("")
+    lines.append(f"<!-- {contracts.render_text_footer(model.provenance)} -->")
     return "\n".join(lines)
 
 
 def render_json(model: TabletopModel) -> str:
-    return json.dumps(
-        {
+    payload = {
             "scenario": model.scenario.get("id"),
             "title": model.scenario.get("title"),
             "target": model.target,
             "injects": model.scenario.get("injects", []),
             "facilitation_questions": model.scenario.get("facilitation_questions", []),
             "focus": model.focus,
-        },
+        }
+    return json.dumps(
+        contracts.envelope(payload, model.provenance),
         indent=2,
         ensure_ascii=False,
     )

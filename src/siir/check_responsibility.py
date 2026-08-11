@@ -26,6 +26,8 @@ from pathlib import Path
 from typing import Any
 
 from . import definitions as defn_mod
+from . import contracts
+from . import input_contracts
 import overlay_scoring as overlay_mod
 
 OverlayError = defn_mod.OverlayError
@@ -50,6 +52,7 @@ class ResponsibilityResult:
     target: str
     items: list[ItemResult]
     conclusion: str  # PASS | REVISE | BLOCK
+    provenance: dict = field(default_factory=dict)
 
     @property
     def score(self) -> float:
@@ -138,7 +141,10 @@ def check(
         overlay_paths=overlay_paths,
         definition_path_override=definition_path_override,
     )
-    answers = overlay_mod.load_yaml(answers_path) or {}
+    answers = input_contracts.load_yaml_answers(
+        answers_path, "responsibility-answers.schema.json", "responsibility answers"
+    )
+    input_contracts.validate_responsibility_semantics(answers, defn)
     matrix = answers.get("matrix", {}) or {}
 
     sep = overlay_mod.separator_of(defn)
@@ -173,6 +179,12 @@ def check(
         target=answers.get("target", str(answers_path)),
         items=items,
         conclusion=conclusion,
+        provenance=contracts.make_provenance(
+            "check-responsibility",
+            definitions={"responsibility-matrix": defn},
+            input_paths=[answers_path],
+            overlay_paths=overlay_paths,
+        ),
     )
 
 
@@ -187,12 +199,12 @@ def render_text(result: ResponsibilityResult) -> str:
             lines.append(f"    gray (tbd): {', '.join(i.gray_roles)}")
     lines.append("")
     lines.append(f"Conclusion: {result.conclusion}")
+    lines.extend(["", contracts.render_text_footer(result.provenance)])
     return "\n".join(lines)
 
 
 def render_json(result: ResponsibilityResult) -> str:
-    return json.dumps(
-        {
+    payload = {
             "target": result.target,
             "conclusion": result.conclusion,
             "score": result.score,
@@ -208,7 +220,9 @@ def render_json(result: ResponsibilityResult) -> str:
                 }
                 for i in result.items
             ],
-        },
+        }
+    return json.dumps(
+        contracts.envelope(payload, result.provenance),
         indent=2,
         ensure_ascii=False,
     )
