@@ -27,7 +27,7 @@ MARKDOWN = MarkdownIt("commonmark")
 
 def documentation_files() -> list[Path]:
     """Return the user-facing Markdown files checked by this script."""
-    return [
+    candidates = [
         ROOT / "README.md",
         ROOT / "README.ja.md",
         ROOT / "CHANGELOG.md",
@@ -39,6 +39,7 @@ def documentation_files() -> list[Path]:
         *sorted((ROOT / "docs").glob("*.md")),
         *sorted((ROOT / "examples" / "skills").glob("*/SKILL.md")),
     ]
+    return [path for path in candidates if path.is_file()]
 
 
 def github_slug(text: str) -> str:
