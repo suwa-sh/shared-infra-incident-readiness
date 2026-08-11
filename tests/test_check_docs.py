@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
-import re
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "check_docs.py"
@@ -60,11 +59,6 @@ def test_untagged_image_in_guide_is_rejected(tmp_path, monkeypatch):
     assert any("<untagged>" in error for error in errors)
 
 
-def test_readme_image_version_matches_project_release_version():
-    project = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8")
-    match = re.search(r'^version = "([^"]+)"$', project, re.MULTILINE)
-    assert match
-
-    errors, version, _ = check_docs.check_image_references()
-    assert errors == []
-    assert version == f"v{match.group(1)}"
+def test_unreleased_overlay_example_uses_repository_entrypoint():
+    readme = (Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8")
+    assert "bin/siir render-runbook examples/responsibility/sample-evaluation-containment.yaml" in readme

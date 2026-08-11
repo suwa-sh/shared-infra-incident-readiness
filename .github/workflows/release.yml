@@ -91,21 +91,30 @@ jobs:
           set -euo pipefail
           IMAGE=$(printf '%s/%s' "$REGISTRY" "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
           ENGINE_VERSION=$(sed -n 's/.*overlay-scoring-skeleton==\([0-9][0-9.]*\).*/\1/p' pyproject.toml)
-          if docker buildx imagetools inspect "$IMAGE:$TAG" >/dev/null 2>&1; then
+          INSPECT_ERROR="$RUNNER_TEMP/image-inspect.err"
+          if docker buildx imagetools inspect "$IMAGE:$TAG" >/dev/null 2>"$INSPECT_ERROR"; then
             echo "refusing to attest an existing image without verifying its source revision: $IMAGE:$TAG" >&2
             exit 1
-          else
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              --build-arg "OVERLAY_ENGINE_VERSION=$ENGINE_VERSION" \
-              --build-arg "APP_VERSION=${TAG#v}" \
-              --provenance=mode=max \
-              --sbom=true \
-              --metadata-file "$RUNNER_TEMP/build-metadata.json" \
-              -t "$IMAGE:$TAG" \
-              --push .
-            DIGEST=$(jq -r '."containerimage.digest"' "$RUNNER_TEMP/build-metadata.json")
           fi
+          if ! {
+            grep -Fxq "ERROR: $IMAGE:$TAG: not found" "$INSPECT_ERROR" ||
+            grep -Fxq "ERROR: $IMAGE:$TAG: manifest unknown" "$INSPECT_ERROR" ||
+            grep -Fxq "ERROR: $IMAGE:$TAG: name unknown" "$INSPECT_ERROR"
+          }; then
+            echo "could not confirm that the release image is absent; refusing to publish $IMAGE:$TAG" >&2
+            cat "$INSPECT_ERROR" >&2
+            exit 1
+          fi
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg "OVERLAY_ENGINE_VERSION=$ENGINE_VERSION" \
+            --build-arg "APP_VERSION=${TAG#v}" \
+            --provenance=mode=max \
+            --sbom=true \
+            --metadata-file "$RUNNER_TEMP/build-metadata.json" \
+            -t "$IMAGE:$TAG" \
+            --push .
+          DIGEST=$(jq -r '."containerimage.digest"' "$RUNNER_TEMP/build-metadata.json")
           docker buildx imagetools create -t "$IMAGE:latest" "$IMAGE@$DIGEST"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
