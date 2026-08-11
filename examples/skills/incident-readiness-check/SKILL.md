@@ -1,81 +1,112 @@
 ---
 name: incident-readiness-check
-description: Walk a user through the shared-infrastructure incident-readiness check. Loads the responsibility-matrix and DPA definitions, gathers the org's assignments via dialogue, runs `siir check-responsibility` / `siir check-dpa` in JSON mode, and reports PASS/REVISE/BLOCK with the first gap to fix. Use when the user wants to evaluate whether a shared platform (OEM /共通基盤) is ready for the first 30 minutes of an incident.
+description: Walk a user through a shared-infrastructure incident-readiness check. Gather responsibility assignments and DPA coverage, run the SIIR CLI in JSON mode, and report PASS, REVISE, or BLOCK with the first gap to fix. Use when a shared SaaS or OEM platform needs to assess its readiness for the first 30 minutes of an incident.
 ---
 
 # incident-readiness-check
 
-Interactively score a shared infrastructure's incident readiness against the
-definitions in this repository. This skill is a thin wrapper around the `siir`
-CLI: it gathers the responsibility-boundary assignments and DPA clause coverage
-via dialogue, runs the CLI in JSON mode, and translates the verdict back into a
-readable summary plus the first gap to fix.
+Use this skill to collect an organisation's responsibility assignments and DPA coverage, then score them with the SIIR CLI.
+The skill is a thin wrapper around the CLI and must not implement its own scoring rules.
 
 ## When to use this skill
 
-- The user runs a shared SaaS / OEM platform and wants to know whether the
-  incident-initial-response responsibilities are clearly assigned
-- The user asks to "do a readiness check" / "責任分界を点検" / "事故初動の備えを評価"
-- The user wants to score against an overlay (their own company's stricter rules)
+- A shared SaaS or OEM operator wants to check whether initial-response responsibilities have an owner.
+- A user asks for a readiness check, a responsibility-boundary review, or an assessment of incident preparation.
+- A user wants to apply an official or organisation-specific overlay.
 
 ## Workflow
 
-0. Decide the ordered overlay list first. Overlays add items, so discovering
-   questions from the base definition while scoring with an overlay would
-   silently skip the added items (e.g. RB20-RB24 from `agentic-attacker` or
-   RB30-RB36 from `evaluation-containment`, the bundled official overlays).
-   Treat `evaluation-containment` as a three-file bundle for multi-definition
-   workflows; selecting only its scenario leaves the added owners and ordered
-   response activities unresolved. Validate each overlay with
-   `bin/siir check-overlay <path>`.
-   How to pass the list differs by command kind:
-   - multi-definition commands (`list-definitions`, `render-runbook`,
-     `tabletop`) accept the FULL list — they route each overlay to the
-     definition its `extends` targets;
-   - single-definition commands (`check-responsibility`, `check-dpa`,
-     `validate-record`) must receive only the SUBSET whose `extends` matches
-     that command's definition (keep the relative order). Passing an
-     unrelated overlay there is a hard error (exit 3), by design.
+### 1. Select and validate overlays
 
-1. Read the effective (overlay-applied) definition — not the base file — to
-   retrieve the items and roles:
-   `bin/siir list-definitions --format json --detail --overlay <path> ...` and
-   take `items` and `role_items` from the responsibility-matrix entry. Use each
-   effective item's `text`, `note`, `recommended`, and role names when asking
-   questions. Do not hard-code item text, role lists, or counts; overlays extend
-   all of them.
+Decide the ordered overlay list before asking questions.
+Otherwise, questions discovered from the base definition can omit overlay-added items such as RB20 through RB24 or RB30 through RB36.
 
-2. For each item (including overlay-added ones), ask who is Accountable /
-   Responsible / Consulted / Informed. Where the org genuinely has not
-   decided, record `tbd` (the framework treats an explicit `tbd` as a healthy
-   gray zone, not a failure).
+Validate every selected file before applying it.
 
-3. Write the answers to a temp YAML:
+```bash
+bin/siir check-overlay <path>
+```
 
-   ```yaml
-   target: <platform name>
-   matrix:
-     RB01: { principal_isp: R, oem_operator: C, ops_bpo: I, sw_vendor: I }
-     ...
-   ```
+Use the overlay list according to the command type.
 
-4. Run `bin/siir check-responsibility <tmp.yaml> --format json` with the
-   responsibility-matrix subset of the step-0 list (`extends:
-   shared-infra-responsibility-matrix`, relative order preserved). Capture
-   stdout and the exit code.
+| Command type | Overlay argument |
+|---|---|
+| Multi-definition commands: `list-definitions`, `render-runbook`, `tabletop` | Pass the complete ordered list. The CLI routes each file by its `extends` value. |
+| Single-definition commands: `check-responsibility`, `check-dpa`, `validate-record` | Pass only the ordered subset whose `extends` value matches the command's definition. |
 
-5. Optionally gather DPA clause coverage and run
-   `bin/siir check-dpa <dpa.yaml> --format json` with the dpa-clauses subset
-   of the step-0 list (if any).
+Passing an unrelated overlay to a single-definition command is an input error with exit code 3.
+For a multi-definition `evaluation-containment` workflow, select its scenarios, responsibility, and incident-raci files as one bundle.
 
-6. Translate the JSON: lead with the conclusion (PASS / REVISE / BLOCK), then
-   list the items that are `block` (unassigned / no accountable / split A) and
-   the items that are `revise` (gray zones to resolve). Recommend fixing the
-   `block` items first, then re-running.
+### 2. Read the effective definitions
 
-## Failure modes to handle
+Read the overlay-applied definition instead of reading only the base YAML.
 
-- If `bin/siir` is not on PATH, fall back to `python -m siir.cli ...` with
-  `PYTHONPATH=<repo>/src`.
-- If the overlay fails `check-overlay`, surface the violation and stop rather
-  than scoring with a half-applied overlay.
+```bash
+bin/siir list-definitions \
+  --format json \
+  --detail \
+  --overlay <path> ...
+```
+
+Use `items` and `role_items` from the responsibility-matrix entry.
+Use each item's effective `text`, `note`, `recommended`, and role names when asking questions.
+Do not hard-code item text, role lists, or item counts.
+
+### 3. Collect responsibility assignments
+
+For every effective item, ask which roles are Accountable, Responsible, Consulted, and Informed.
+Record a genuinely undecided assignment as `tbd`.
+The CLI reports `tbd` as `REVISE`, which preserves the uncertainty without treating it as an unassigned `BLOCK`.
+
+Write the answers to a temporary YAML file.
+
+```yaml
+target: <platform name>
+matrix:
+  RB01:
+    principal_isp: R
+    oem_operator: C
+    ops_bpo: I
+    sw_vendor: I
+```
+
+### 4. Run the responsibility check
+
+Pass only the responsibility-matrix subset of the selected overlay list.
+Preserve its relative order.
+
+```bash
+bin/siir check-responsibility \
+  <answers.yaml> \
+  --format json \
+  --overlay <responsibility-overlay> ...
+```
+
+Capture both stdout and the exit code.
+
+### 5. Check DPA coverage when requested
+
+Collect `present`, `partial`, or `missing` for each effective DPA clause.
+Run `check-dpa` with only the dpa-clauses subset of the selected overlay list.
+
+```bash
+bin/siir check-dpa \
+  <dpa-answers.yaml> \
+  --format json \
+  --overlay <dpa-overlay> ...
+```
+
+### 6. Report the result
+
+Lead with `PASS`, `REVISE`, or `BLOCK`.
+List `block` items first, including unassigned ownership, missing Accountable ownership, and split Accountable ownership.
+Then list `revise` items, including explicit gray zones.
+Recommend the first block item to resolve, then rerun the check.
+
+Delete temporary files after reporting unless the user asks to retain them.
+
+## Failure modes
+
+- If `bin/siir` is unavailable, run `python -m siir.cli ...` with `PYTHONPATH=<repo>/src`.
+- If `check-overlay` fails, report the violation and stop before scoring.
+- If an overlay targets the wrong definition, correct the command-specific subset instead of suppressing the input error.

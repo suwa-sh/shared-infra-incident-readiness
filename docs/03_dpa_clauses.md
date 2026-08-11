@@ -1,61 +1,78 @@
-# 03. DPA 必須 10 条項 — 共有基盤の委託契約に最低限書く
+# 03. 共有基盤の委託契約に必要な DPA 10 条項
 
 ## TL;DR
 
-共有インフラの委託契約に最低限盛り込む **DPA 10 条項**(GDPR Art.28(3) と個情委ガイドラインの合成)です。`siir check-dpa` が契約のカバレッジを採点し、必須条項の欠落を `BLOCK` で表面化します。
-
-## DPA とは
-
-**DPA**(Data Processing Agreement、データ処理契約)は、個人データの取扱いを**委託する側(委託元 / controller)と委託される側(委託先 / processor)のあいだで取り決める契約**です。「何を・何のために処理するか」「事故が起きたとき誰がいつ通知するか」「監査ログをどう残すか」などを定めます。
-
-共有インフラでは、1 つの基盤を複数のブランドが利用するため、事故時の責任分界が曖昧になりがちです。DPA は、その分界を**平時に契約で固定しておく**ための土台になります。本リポは、その DPA に最低限必要な 10 条項を機械可読の正本(`definitions/dpa-clauses.yaml`)として持ち、自社契約に揃っているかを採点します。
+SIIR は、共有インフラの委託契約で確認する DPA 10 条項を機械可読の定義として提供します。
+`siir check-dpa` は自社契約の充足状況を採点し、必須条項の欠落を `BLOCK` として表示します。
+この診断は契約レビューの出発点であり、個別案件の法的判断を代替しません。
 
 ## When to use this
 
-- 共有 SaaS / 基盤の委託契約をレビュー・起案している
-- 契約交渉の出発点として「何が抜けているか」を機械的に出したい
+- 共有 SaaS や共通基盤の委託契約を起案または更新するとき
+- 契約交渉の前に、確認すべき条項の抜けを洗い出したいとき
+- 委託先の変更後に、通知や監査の条件が維持されているか確認するとき
 
 ## Quick use
 
+記入例をコピーし、各条項を `present`、`partial`、`missing` のいずれかで評価します。
+
 ```bash
 bin/siir check-dpa examples/dpa/sample-dpa-answers.yaml
-# => DPA03 (通知SLA) が missing => BLOCK
+# DPA03 が missing のため BLOCK
 ```
-
-`examples/dpa/sample-dpa-answers.yaml` をコピーし、各条項を `present`(ある)/ `partial`(部分的)/ `missing`(ない)で記入してから実行します。
 
 ## Concept
 
-### 10 条項
+### DPA が固定する責任
 
-| ID | 条項 | 要点 |
+**DPA（Data Processing Agreement）**は、個人データの取扱いを委託する側と、委託される側の契約です。
+処理の目的、再委託、事故通知、監査ログ、セキュリティ対応などを定めます。
+
+共有インフラでは、一つの基盤を複数の組織やブランドが利用します。
+事故後に通知主体や調査協力を決め始めると初動が遅れるため、平時の契約で分担を合意しておきます。
+
+### 確認する 10 条項
+
+| ID | 条項 | 確認する内容 |
 |---|---|---|
-| DPA01 | 処理内容の特定 | 目的・種別・カテゴリ・期間 |
-| DPA02 | 再委託の事前承認 | 再委託先一覧の維持 |
-| DPA03 | 委託先→委託元 漏えい通知SLA | 24h第一報 / 72h確報(実務推奨)。**契約 SLA の正本はここ** |
-| DPA04 | 本人通知の主体明示 | 委託元 / 委託先のどちらか |
-| DPA05 | 規制当局通知の主体明示 | 個情委・総務省への通知主体 |
-| DPA06 | 監査ログの保持期間と提供義務 | 要請時に N営業日以内提供 |
-| DPA07 | アクセス鍵・パスワードハッシュ管理責任 | ハッシュ指定、鍵ローテーションSLA |
-| DPA08 | 第三者ソフトウェアのパッチ管理 | Critical公表後72h以内に暫定対応着手 |
-| DPA09 | インシデント時の合同対応条項 | フォレンジック・広報・法務の役割 |
-| DPA10 | 演習義務 | 年1回以上の Tabletop / Red Team を明記 |
+| DPA01 | 処理内容の特定 | 目的、データ種別、対象者カテゴリ、期間 |
+| DPA02 | 再委託の事前承認 | 再委託の承認方法と再委託先一覧 |
+| DPA03 | 委託先から委託元への漏えい通知 SLA | 第一報と確報の期限 |
+| DPA04 | 本人通知の主体 | 委託元と委託先のどちらが通知するか |
+| DPA05 | 規制当局通知の主体 | 個情委や総務省へ誰が通知するか |
+| DPA06 | 監査ログの保持と提供 | 保持期間と提供期限 |
+| DPA07 | 鍵とパスワードハッシュの管理 | 方式、責任主体、ローテーション期限 |
+| DPA08 | 第三者ソフトウェアのパッチ管理 | Critical 脆弱性への暫定対応期限 |
+| DPA09 | インシデント時の合同対応 | フォレンジック、広報、法務の分担 |
+| DPA10 | 演習 | Tabletop または Red Team の実施頻度 |
 
-> **SLA の正本の置き場**: 契約上の通知期限(24h / 72h)は DPA03 に置きます。一方、法令・規制の期限(個情委への速報・確報、総務省への報告)は `notification-obligations.yaml` に分けて持ちます。同じ値を 2 か所に書かないための分担です(→ [02](02_incident_raci_and_sla.md))。
+契約上の通知期限は、DPA03 が正本です。
+法令または規制上の期限は `definitions/notification-obligations.yaml` に保存します。
+二つの期限を分ける理由は、[02. 初動 RACI と通知期限の管理](02_incident_raci_and_sla.md) を参照してください。
 
-### 反証 — 条項を書いても監督責任は消えません
+### 採点結果を読む
 
-ベネッセ判決は「契約に責任分界が書かれていても、委託元の監督責任は免除されない」と判断しました。本リポの DPA 条項は**初動の責任分界を明文化する出発点**であり、監督義務・多層防御・演習とセットで運用します(→ [04](04_tabletop_and_runbook.md))。
+| 回答 | 意味 | 判定への影響 |
+|---|---|---|
+| `present` | 条項を満たします。 | `OK` |
+| `partial` | 一部を満たしますが、追加の合意が必要です。 | `REVISE` |
+| `missing` | 必須条項がありません。 | `BLOCK` |
 
-### 採点と overlay
-
-`check-dpa` の answers は、各条項を `present` / `partial` / `missing` で記入します。必須条項が `missing` なら `BLOCK`、`partial` があれば `REVISE` です。自社固有の条項は overlay の `add` で増やせます。`DPA03` の SLA は `strengthen`(24h→12h など短縮方向のみ)で厳格化できます。
+自社固有の条項は overlay の `add` で追加できます。
+DPA03 のように厳格化を許可した数値は、overlay の `strengthen` で短縮できます。
+たとえば、24 時間の第一報期限を 12 時間へ短縮できますが、36 時間への緩和はできません。
 
 ```bash
-bin/siir check-overlay examples/overlays/sample-company/extra-clauses.yaml   # add DPA11 + strengthen DPA03
+bin/siir check-overlay examples/overlays/sample-company/extra-clauses.yaml
 ```
+
+### 契約と監督責任を分けて考える
+
+「DPA に責任分界を書けば、委託元の監督責任がなくなる」という意味ではありません。
+DPA は初動の分担を固定する契約上の土台であり、委託先の監督、多層防御、定期演習は別に必要です。
 
 ## References
 
-- 正本: [`definitions/dpa-clauses.yaml`](../definitions/dpa-clauses.yaml)
-- 実装: [`src/siir/check_dpa.py`](../src/siir/check_dpa.py)
+- 正本：[`definitions/dpa-clauses.yaml`](../definitions/dpa-clauses.yaml)
+- 記入例：[`examples/dpa/sample-dpa-answers.yaml`](../examples/dpa/sample-dpa-answers.yaml)
+- 実装：[`src/siir/check_dpa.py`](../src/siir/check_dpa.py)

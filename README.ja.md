@@ -7,262 +7,247 @@
 
 > 🇬🇧 English version: [README.md](README.md)
 
-**共有インフラ事故初動の最初の 30 分**を救う、診断ツール + 拡張可能フレームワークです。誰が説明責任を負うか、DPA のどの条項が欠けているか、通知タイムラインが SLA を守れているか、Tabletop 演習をどう回すか――これらを機械可読の定義として持ち、CLI で診断します。KDDI 共用メール基盤事案(6 ISP の OEM 共有基盤)の**公開分析からの抽出**です。
+**shared-infra-incident-readiness（SIIR）** は、共有インフラ事故の最初の 30 分に必要な責任、契約、通知期限を診断する CLI です。
+責任境界表、初動 RACI、DPA 条項、通知義務、Tabletop シナリオを機械可読の定義として提供します。
 
-主な特徴は、次の 3 点です。
+SIIR は、共用メール基盤事案の公開情報を基に作成しました。
+各組織は基本定義をフォークせず、overlay で固有のロール、責任項目、契約条項、通知義務、シナリオを追加できます。
 
-1. **事故初動の備えを診断します** — 責任境界・契約条項(DPA)・通知 SLA を機械的に点検し、結果を決定的な合否で返します。
-2. **機械可読の正本を持ちます** — 責任境界表・RACI・DPA 条項・通知義務・シナリオを定義として持ち、AI エージェントや CI から直接利用できます。
-3. **フォークせず拡張できます** — 各社固有のロール・項目・条項・通知義務・シナリオを、overlay で追加できます。
+## SIIR で確認できること
 
-> **用語について**: **DPA**(Data Processing Agreement)は、個人データの取扱いを委託元・委託先のあいだで取り決める契約です。**RACI** は責任を Responsible(実施)/ Accountable(説明責任)/ Consulted(相談)/ Informed(通知)の 4 役割で整理する手法です。**SLA**(Service Level Agreement)はここでは「いつまでに通知するか」の期限を指します。
+| 確認する対象 | コマンド | 主な結果 |
+|---|---|---|
+| 事故初動の責任境界 | `check-responsibility` | 責任者の未割当、説明責任の分裂、都度協議 |
+| DPA 条項の充足状況 | `check-dpa` | 必須条項の欠落と部分充足 |
+| インシデント記録 | `validate-record` | スキーマ違反、通知期限の超過、未送信通知 |
+| 初動ランブック | `render-runbook` | 責任境界、初動順序、連絡経路 |
+| Tabletop 演習 | `tabletop` | 注入イベント、設問、重点項目の責任者 |
+| overlay | `check-overlay` | `add` と `strengthen` の規則違反 |
+| 有効な定義 | `list-definitions` | 基本定義と overlay を統合した項目一覧 |
 
-> **言語について**: `docs/` は日本語(著者の作業言語)で書いています。英語 README が入口、本ファイル(日本語)が正本テキストです。
+**DPA（Data Processing Agreement）** は、個人データの取扱いを委託元と委託先の間で定める契約です。
+**RACI** は、実施責任、説明責任、相談先、通知先を整理する方法です。
+**SLA（Service Level Agreement）** は、このリポジトリでは主に通知や対応の期限を指します。
+**Tabletop 演習** は、シナリオに沿って判断と連絡を確認する机上演習です。
+**Communication Tree** は、誰が、いつ、誰へ、何を伝えるかを表す連絡経路です。
 
-## Quick start(3 分)
+`docs/` は日本語で記述しています。
+このファイルを日本語版の正本とし、[README.md](README.md) を英語の入口として提供します。
 
-セットアップ不要です。公開済みイメージを pull して実行するだけで、同梱のサンプルがそのまま動きます。
+## 3 分で試す
 
-```bash
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 --version
-
-# 同梱のサンプルで各コマンドの出力を確認します
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
-  check-responsibility examples/responsibility/sample-oem-mail.yaml
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
-  check-dpa examples/dpa/sample-dpa-answers.yaml
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
-  validate-record examples/records/sample-incident.json --level extended
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
-  render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
-  tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
-```
-
-`--version` は、アプリのバージョンと同梱の overlay エンジンのバージョンを表示します(例: `siir 0.2.0 (overlay-scoring-skeleton 0.1.0)`)。
-
-overlay 適用後の項目本文、注記、推奨セル、ロール名をエージェントや連携処理から読む場合は、`list-definitions --format json --detail` を使います。
-`--detail` は JSON 出力専用です。
-
-各コマンドは決定的な exit code を返すので、CI のゲートに使えます。
-**0** ok ・ **1** partial(黄: 警告 / 都度協議 / 未送信) ・ **2** block(欠落・条項不足・SLA 違反・overlay 却下) ・ **3** 入力エラー。
-
-## 使い方(想定ワークフロー)
-
-コマンドは「自分のデータを用意して実行する」ものです。自社のファイルが入ったディレクトリをコンテナにマウントします。以降の説明を読みやすくするため、シェル関数を定義しておきます。
+公開済みの Docker イメージ `v0.3.0` を使います。
+セットアップは不要です。
 
 ```bash
-siir() { docker run --rm -v "$PWD:/data" -w /data \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 "$@"; }
+docker run --rm \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+  --version
+
+docker run --rm \
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+  check-responsibility \
+  examples/responsibility/sample-oem-mail.yaml
 ```
 
-同梱の [`examples/`](examples/) をひな型として、自社の値に書き換えてから実行します。平時の備えから事故時の検証まで、次の順で使います。
+二つ目のコマンドは、責任項目ごとの `OK`、`REVISE`、`BLOCK` と、全体の結論を表示します。
+同梱例では RB12 が未割当のため、結論は `BLOCK` です。
 
-### ステップ 0 — 準備
+各コマンドは、次の exit code を返します。
 
-[`examples/responsibility/sample-oem-mail.yaml`](examples/responsibility/sample-oem-mail.yaml) と
-[`examples/dpa/sample-dpa-answers.yaml`](examples/dpa/sample-dpa-answers.yaml) をひな型に、
-`my-responsibility.yaml` / `my-dpa.yaml` として自社用の入力ファイルを作ります。
+| exit code | 意味 | 例 |
+|---|---|---|
+| 0 | `OK` | 診断項目を満たします。 |
+| 1 | `REVISE` | 都度協議、部分充足、未送信通知があります。 |
+| 2 | `BLOCK` | 必須項目の欠落、期限超過、overlay 違反があります。 |
+| 3 | 入力エラー | ファイル、構文、参照、引数に誤りがあります。 |
 
-### ステップ 1 — 責任境界を点検する(平時)
+CI では、exit code 2 と 3 を失敗条件として扱えます。
+exit code 1 を失敗にするかは、組織の運用方針に合わせて決めます。
 
-`my-responsibility.yaml` の `matrix` を、自社の事故初動の割当(R/A/C/I)に書き換えます。まだ決まっていない箱は `tbd`(都度協議)と書いて構いません。
+## 自社データで診断する
+
+Docker で自社ファイルを読むため、現在のディレクトリを `/data` にマウントします。
+次のシェル関数を定義すると、以降のコマンドを短く書けます。
+
+```bash
+siir() {
+  docker run --rm \
+    -v "$PWD:/data" \
+    -w /data \
+    ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
+    "$@"
+}
+```
+
+### 1. 責任境界を記入する
+
+[`examples/responsibility/sample-oem-mail.yaml`](examples/responsibility/sample-oem-mail.yaml) を `my-responsibility.yaml` としてコピーします。
+`matrix` の RACI セルを自社の割当に書き換えます。
+まだ決めていないセルには `tbd` を記入します。
 
 ```bash
 siir check-responsibility my-responsibility.yaml
 ```
 
-出力例(抜粋):
+`BLOCK` を先に解消し、`REVISE` には決定者と解決期限を設定します。
+採点方法は [責任境界の解説](docs/01_responsibility_boundary.md) を参照してください。
 
-```text
-Target: 共用メール基盤 (6 ISP OEM)
-Responsibility readiness: 83%
+### 2. DPA の条項を確認する
 
-[OK] RB01 利用者向け窓口・本人通知: OK (ok)
-[..] RB04 プレスリリース (共同 / 個別の決定): REVISE (accountability_deferred)
-    gray (tbd): oem_operator
-[NG] RB12 平時 / 事故時の合同演習主催: BLOCK (unassigned)
-
-Conclusion: BLOCK
-```
-
-`[OK]` ok / `[..]` revise / `[NG]` block を行ごとに示し、最後に総合判定を返します。`BLOCK`(未割当・説明責任の分裂)を先に潰し、`REVISE`(`tbd` のグレーゾーン)を計画的に埋めます。詳細は [docs/01](docs/01_responsibility_boundary.md) を参照してください。
-
-### ステップ 2 — 契約(DPA)の抜けを点検する(平時)
-
-`my-dpa.yaml` の各条項を `present` / `partial` / `missing` で記入し、委託契約に必須 10 条項が揃っているかを確認します。
+[`examples/dpa/sample-dpa-answers.yaml`](examples/dpa/sample-dpa-answers.yaml) を `my-dpa.yaml` としてコピーします。
+各条項を `present`、`partial`、`missing` のいずれかで記入します。
 
 ```bash
 siir check-dpa my-dpa.yaml
 ```
 
-出力例(抜粋):
+必須条項が `missing` なら `BLOCK`、`partial` なら `REVISE` です。
+条項の意味は [DPA の解説](docs/03_dpa_clauses.md) を参照してください。
 
-```text
-Target: 共用メール基盤 委託契約 v1
-DPA coverage: 70%
+### 3. ランブックと演習進行表を生成する
 
-[OK] DPA01 処理内容の特定: PRESENT (required)
-[NG] DPA03 委託先→委託元 漏えい通知SLA: MISSING (required)
-[..] DPA05 規制当局通知の主体明示: PARTIAL (required)
-
-Conclusion: BLOCK
-```
-
-必須条項が `missing` なら `BLOCK`、`partial` があれば `REVISE` になります。詳細は [docs/03](docs/03_dpa_clauses.md) を参照してください。
-
-### ステップ 3 — 平時の演習とランブックを用意する
-
-責任境界表とシナリオから、初動ランブック(責任境界表 → Runbook → Communication Tree)と Tabletop 演習プログラムを生成します。出力は決定的なので、レビューや差分管理ができます。
+責任境界表とシナリオから、初動ランブックと Tabletop 演習の進行表を生成します。
 
 ```bash
-siir render-runbook my-responsibility.yaml --scenario rce-6brand
-siir tabletop --scenario rce-6brand my-responsibility.yaml
+siir render-runbook \
+  my-responsibility.yaml \
+  --scenario rce-6brand
+
+siir tabletop \
+  --scenario rce-6brand \
+  my-responsibility.yaml
 ```
 
-`render-runbook` の出力例(Markdown、抜粋):
+`render-runbook` は、責任境界、初動活動、Communication Tree の 3 段を出力します。
+`tabletop` は、時系列の注入イベント、ファシリテーション設問、重点項目の責任者を出力します。
+詳しい読み方は [Tabletop 演習と初動ランブック](docs/04_tabletop_and_runbook.md) を参照してください。
 
-```text
-# 初動ランブック: 共用メール基盤 (6 ISP OEM)
+### 4. 事故記録と通知期限を検証する
 
-- シナリオ: 共有メール基盤の第三者製SW RCE → 6ブランド同時公表
-- 想定影響ブランド数: 6
-
-## Stage 1. 責任境界表 (この事故で誰が何の責任か)
-
-| 項目 | Accountable | Responsible | 都度協議 | 出典 |
-|---|---|---|---|---|
-| RB02 * 個情委への速報・確報 | 委託元ISP | OEM基盤運用者 | - | org |
-| RB04 * プレスリリース (共同 / 個別の決定) | - | - | OEM基盤運用者 | org |
-... (Stage 2 初動ランブック / Stage 3 Communication Tree が続く)
-```
-
-`tabletop` の出力例(Markdown、抜粋):
-
-```text
-# Tabletop 演習プログラム: 共有メール基盤の第三者製SW RCE → 6ブランド同時公表
-
-- 所要時間: 90 分
-
-## 注入イベント (時系列)
-- T+0分: 1ブランドの EDR が不審なプロセス実行を検知。共有基盤起因かは未確定
-- T+30分: 報道機関から「6社共通基盤か」と問い合わせ。24h SLA の第一報期限が接近
-... (ファシリ設問 / focus 項目が続く)
-```
-
-出力は Markdown なので、そのまま社内 wiki やランブックに貼れます。利用できるシナリオ id は `siir list-definitions` で確認できます。詳細は [docs/04](docs/04_tabletop_and_runbook.md) を参照してください。
-
-### ステップ 4 — 事故が起きたら通知 SLA を検証する(事故時)
-
-[`examples/records/sample-incident.json`](examples/records/sample-incident.json) をひな型に、実際の事故記録(影響ブランド・共有コンポーネント・通知タイムライン)を `my-incident.json` として作り、通知が SLA を守れているかを検証します。
+[`examples/records/sample-incident.json`](examples/records/sample-incident.json) を `my-incident.json` としてコピーします。
+影響範囲、共有コンポーネント、通知時刻を実際の事故に合わせて記入します。
 
 ```bash
 siir validate-record my-incident.json --level extended
 ```
 
-出力例:
+CLI はスキーマを先に検証し、その後で数値化できる通知期限を照合します。
+「遅滞なく」のように数値化していない期限は、自動で合否を決めず、手動確認へ回します。
+期限の管理方法は [初動 RACI と通知期限](docs/02_incident_raci_and_sla.md) を参照してください。
 
-```text
-Record schema: incident_record_extended
-[OK] schema: valid
+### 5. 有効な定義を確認する
 
-Notification SLA:
-  [OK] DPA03 委託先→委託元 漏えい通知SLA: sent 11.0h after awareness (<= 24h)
-  [NG] DPA03 委託先→委託元 漏えい通知SLA (確報): sent 102.0h after awareness, SLA is 72h
-  [i] OB03 総務省への重大事故報告: non-numeric deadline; review manually
-  [..] OB04 本人への通知: not sent yet (pending)
-
-Conclusion: BLOCK
-```
-
-まずスキーマ(影響ブランド・共有コンポーネント・通知タイムラインの形式)を検証し、続いて各通知が SLA に間に合っているかを照合します。数値締切の超過(`breach`)や時系列の逆転を検出し、「遅滞なく」などの非数値締切は手動レビュー(`[i]`)に回します。詳細は [docs/02](docs/02_incident_raci_and_sla.md) を参照してください。
-
-### ステップ 5 — 自社ルールで拡張する(任意)
-
-各社固有のロール・条項・シナリオは overlay で追加し、適用前に検証します。
-[`examples/overlays/sample-company/extra-clauses.yaml`](examples/overlays/sample-company/extra-clauses.yaml)
-をひな型に `my-overlay.yaml` を作ります。
+基本定義と指定した overlay を統合した結果は、`list-definitions` で確認できます。
 
 ```bash
-siir check-overlay my-overlay.yaml
-siir check-dpa my-dpa.yaml --overlay my-overlay.yaml
-```
+siir list-definitions
 
-`check-overlay` の出力例:
-
-```text
-[OK] overlay valid (add / strengthen rules satisfied)
-```
-
-overlay が `add`(追加)/ `strengthen`(厳格化)のルールを満たせば `[OK]`、違反すれば `[NG]` と理由を返します。検証を通った overlay を `--overlay` で各コマンドに適用します。
-
-## 公式 overlay — AI 攻撃者 readiness(agentic-attacker)
-
-自作 overlay のほかに、公式配布の overlay を [`overlays/`](overlays/) に同梱しています。`overlays/agentic-attacker/` は、自律 AI エージェントが駆動した実際の侵入事案(Hugging Face、2026-07-16 公開)から抽出した 4 次元 — 機械速度の初動 / フォレンジック基盤の主権 / 権限境界の連鎖 / 手薄時間帯の初動 SLA — を、責任項目 5 件・初動活動 3 件・Tabletop シナリオ 1 本として診断に追加します。
-
-ソース checkout ではリポジトリ直下から相対パスで指定します。
-
-```bash
-siir check-responsibility my-answers.yaml \
-  --overlay overlays/agentic-attacker/responsibility.yaml
-```
-
-Docker では同梱 overlay はイメージ内の `/app` 配下にあります(自組織の answers は `/data` にマウント)。
-
-```bash
-docker run --rm -v "$PWD:/data" ghcr.io/suwa-sh/shared-infra-incident-readiness \
-  check-responsibility /data/my-answers.yaml \
+siir list-definitions \
+  --format json \
+  --detail \
   --overlay /app/overlays/agentic-attacker/responsibility.yaml
 ```
 
-詳細は [`docs/06_agentic_attacker_overlay.md`](docs/06_agentic_attacker_overlay.md) を参照してください。
+`--detail` は JSON 出力専用です。
+項目本文、注記、推奨セル、ロール名を AI エージェントや連携処理から読む場合に使います。
 
-## 公式 overlay：評価環境の封じ込め readiness
+## 公式 overlay を使う
 
-`overlays/evaluation-containment/` は、安全制御を弱めた評価を実施する組織の責任を点検します。
-評価専用ロール 4 件、責任項目 7 件、順序付き初動活動 7 件、Tabletop シナリオ、影響を受けた第三者への Communication Tree 分岐を追加します。
-被害側を扱う `agentic-attacker` overlay とは独立しており、併用できます。
+公式 overlay は [`overlays/`](overlays/) にあります。
+それぞれ独立しており、必要に応じて併用できます。
 
-責任境界だけを採点するときは `responsibility.yaml` を使います。
-シナリオを描画するときは、owner と初動順序を解決するため 3 ファイルをすべて指定します。
+### agentic-attacker
+
+`agentic-attacker` は、自律 AI エージェントが駆動する侵入事案への初動責任を追加します。
+責任項目 5 件、初動活動 3 件、Tabletop シナリオ 1 本で構成します。
 
 ```bash
-siir render-runbook examples/responsibility/sample-evaluation-containment.yaml \
+siir check-responsibility \
+  my-responsibility.yaml \
+  --overlay /app/overlays/agentic-attacker/responsibility.yaml
+```
+
+この overlay は Docker イメージ `v0.3.0` に含まれます。
+詳細は [agentic-attacker overlay](docs/06_agentic_attacker_overlay.md) を参照してください。
+
+### evaluation-containment
+
+`evaluation-containment` は、安全制御を弱めた能力評価を実施する組織の責任を追加します。
+責任項目 7 件、順序付き初動活動 7 件、評価専用ロール 4 件、Tabletop シナリオ、第三者連絡の分岐で構成します。
+
+この overlay は `v0.3.0` のリリース後に追加されています。
+次のタグを公開するまでは、現在の source checkout で `bin/siir` を実行してください。
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e .
+
+bin/siir render-runbook \
+  examples/responsibility/sample-evaluation-containment.yaml \
   --scenario evaluation-containment \
   --overlay overlays/evaluation-containment/scenarios.yaml \
   --overlay overlays/evaluation-containment/responsibility.yaml \
   --overlay overlays/evaluation-containment/incident-raci.yaml
 ```
 
-責任モデル、第三者連絡期限の保存方法、一次資料は [`docs/07_evaluation_containment_overlay.md`](docs/07_evaluation_containment_overlay.md) を参照してください。
+詳細は [evaluation-containment overlay](docs/07_evaluation_containment_overlay.md) を参照してください。
 
-## 誰のためのものか
+## overlay で自社ルールを追加する
 
-| あなたが… | ここから |
+**overlay** は、基本定義をフォークせずに項目や数値を拡張する仕組みです。
+各定義の `extension_points` が、許可する操作を宣言します。
+
+- **`add`**：新しい ID でロール、項目、条項、通知義務、シナリオを追加します。
+  既存項目の上書きと削除はできません。
+- **`strengthen`**：許可された数値を厳格な方向へ変更します。
+  たとえば、24 時間の SLA を 12 時間へ短縮できますが、36 時間へ緩和できません。
+
+同梱例を基に自社 overlay を作り、適用前に検証します。
+
+```bash
+siir check-overlay examples/overlays/sample-company/extra-clauses.yaml
+siir check-dpa \
+  my-dpa.yaml \
+  --overlay examples/overlays/sample-company/extra-clauses.yaml
+```
+
+複数の overlay は、`--overlay` の指定順に適用します。
+各 overlay は、その時点の定義より厳格でなければなりません。
+
+## 読者別の入口
+
+| 読者 | 最初に読む文書 |
 |---|---|
-| OEM / 共通基盤運用者の **PMO・セキュリティ責任者** | [`docs/01_responsibility_boundary.md`](docs/01_responsibility_boundary.md) — 自社の表を埋めて `check-responsibility` |
-| 委託契約の **法務・調達** | [`docs/03_dpa_clauses.md`](docs/03_dpa_clauses.md) — 必須 10 条項を点検 |
-| インシデント記録基盤を作る **エンジニア・SRE** | [`schemas/incident-record.schema.json`](schemas/incident-record.schema.json) + [`docs/02_incident_raci_and_sla.md`](docs/02_incident_raci_and_sla.md) |
-| **コンサル・提案者** | 全 `docs/` + overlay モデル — clone → 顧客別に overlay → 提案 |
+| PMO、セキュリティ責任者 | [責任境界](docs/01_responsibility_boundary.md) |
+| 法務、調達担当 | [DPA 10 条項](docs/03_dpa_clauses.md) |
+| エンジニア、SRE | [初動 RACI と通知期限](docs/02_incident_raci_and_sla.md) |
+| 演習の設計者 | [Tabletop 演習と初動ランブック](docs/04_tabletop_and_runbook.md) |
+| SaaS の委託運用者 | [SaaS 委託先の記入例](docs/05_worked_example.md) |
+| AI セキュリティ担当 | [agentic-attacker](docs/06_agentic_attacker_overlay.md) と [evaluation-containment](docs/07_evaluation_containment_overlay.md) |
 
-## overlay モデル
+## リポジトリの構成
 
-overlay は、フォークせずにフレームワークを拡張する仕組みです。許される操作は 2 つだけで、各定義の `extension_points` で宣言されます。
-
-- **`add`** — 新しいロール / 項目 / 条項 / 通知義務 / シナリオを(新しい `id` で)追加します。既存の上書き・削除は却下されます。
-- **`strengthen`** — 宣言された数値フィールドを厳格方向にのみ移動します(例: SLA を 24h→12h に短縮)。緩和は却下されます。
-
-[使い方(想定ワークフロー)](#使い方想定ワークフロー)の `siir` シェル関数を使い、
-`siir check-overlay <path>` で適用前に検証します。
+```text
+shared-infra-incident-readiness/
+├── definitions/     # 機械可読の基本定義
+├── schemas/         # インシデント記録の JSON Schema
+├── overlays/        # 公式 overlay
+├── bin/ と src/     # CLI
+├── examples/        # 入力例、自社 overlay 例、AI エージェント用 skill
+├── docs/            # 日本語の解説
+└── tests/           # 採点、期限、overlay、出力の境界条件
+```
 
 ## 開発
 
 ```bash
-pytest tests/                  # 境界条件・exit code
-bin/siir --help                # CLI smoke
-npx md-mermaid-lint docs/*.md  # 図の構文
+pytest tests/
+bin/siir --help
+npx md-mermaid-lint docs/*.md
 ```
 
 ## ライセンス
 
-MIT です。[LICENSE](LICENSE) を参照してください。
+MIT License です。
+[LICENSE](LICENSE) を参照してください。

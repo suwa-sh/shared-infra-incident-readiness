@@ -40,32 +40,32 @@ No setup — pull the published image and run it. The bundled samples work out
 of the box:
 
 ```bash
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 --version
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 --version
 
 # 1. Score a filled responsibility-boundary matrix
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-responsibility examples/responsibility/sample-oem-mail.yaml
 
 # 2. Check DPA clause coverage
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-dpa examples/dpa/sample-dpa-answers.yaml
 
 # 3. Validate an incident record + its notification SLA timeline
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   validate-record examples/records/sample-incident.json --level extended
 
 # 4. Render a 3-stage runbook (responsibility table -> runbook -> comms tree)
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
 
 # 5. Render a Tabletop exercise program
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
 
 # 6. Validate an overlay (add / strengthen only) and inspect definitions
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 \
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 \
   check-overlay examples/overlays/sample-company/extra-clauses.yaml
-docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 list-definitions
+docker run --rm ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 list-definitions
 ```
 
 Use `list-definitions --format json --detail` when an agent or integration
@@ -73,7 +73,7 @@ needs the effective item text, notes, recommended cells, and role names after
 all selected overlays are applied. `--detail` is JSON-only.
 
 `--version` prints the app version and the bundled overlay engine version, e.g.
-`siir 0.2.0 (overlay-scoring-skeleton 0.1.0)`.
+`siir 0.3.0 (overlay-scoring-skeleton 0.1.0)`.
 
 Every command returns a deterministic exit code so you can gate CI on it:
 **0** ok · **1** partial (yellow: warnings, deferred items, not-yet-sent
@@ -87,7 +87,7 @@ into the container. A shell function keeps the rest of this guide readable:
 
 ```bash
 siir() { docker run --rm -v "$PWD:/data" -w /data \
-  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.2.0 "$@"; }
+  ghcr.io/suwa-sh/shared-infra-incident-readiness:v0.3.0 "$@"; }
 ```
 
 Grab a sample from [`examples/`](examples/) as a template, edit it with your own
@@ -167,6 +167,15 @@ safety-control-reduced evaluation. It adds 7 responsibility items, 7 ordered
 initial-response activities, 4 evaluation-specific roles, a Tabletop scenario,
 and an affected-third-party communication branch. It is independent from, and
 composable with, the victim-side `agentic-attacker` overlay.
+
+This overlay was added after the `v0.3.0` release. Until the next tag is
+published, run it from the current source checkout with `bin/siir` rather than
+the released container image.
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e .
+```
 
 Use the responsibility file alone for scoring. Use all three files when
 rendering the scenario, so responsibility owners and activity ordering are both

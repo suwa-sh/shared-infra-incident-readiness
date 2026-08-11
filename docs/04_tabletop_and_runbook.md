@@ -1,57 +1,78 @@
-# 04. Tabletop 演習と初動ランブック — 表を「動く紙」にする
+# 04. Tabletop 演習と初動ランブック
 
 ## TL;DR
 
-責任境界表は静的な表のままでは形骸化します。記事の「表 → Runbook → Communication Tree の三段」を機械的に展開し、**初動ランブック**(`siir render-runbook`)と **Tabletop 演習プログラム**(`siir tabletop`)を決定的に生成します。自由生成(LLM)ではなく、同じ入力からは常に同じ出力が出るので、レビューや差分管理ができます。
+`siir render-runbook` は、責任境界表とシナリオから 3 段構成の初動ランブックを生成します。
+`siir tabletop` は、同じ定義から Tabletop 演習の進行表を生成します。
+どちらも自由生成を使わないため、同じ入力から同じ Markdown または JSON を再現できます。
 
 ## When to use this
 
-- 責任境界表を年1回 Tabletop で叩いて形骸化を防ぎたいとき
-- 事故時に開く初動ランブックと Communication Tree を平時に用意したいとき
+- 記入済みの責任境界表を、事故時に実行できる手順へ変換したいとき
+- Tabletop 演習で、未決の責任者や通知期限を確認したいとき
+- ランブックを差分管理し、組織変更後に再生成したいとき
 
 ## Quick use
 
+同梱シナリオから、初動ランブックと演習進行表を生成します。
+
 ```bash
-bin/siir render-runbook examples/responsibility/sample-oem-mail.yaml --scenario rce-6brand
-bin/siir tabletop --scenario rce-6brand examples/responsibility/sample-oem-mail.yaml
+bin/siir render-runbook \
+  examples/responsibility/sample-oem-mail.yaml \
+  --scenario rce-6brand
+
+bin/siir tabletop \
+  --scenario rce-6brand \
+  examples/responsibility/sample-oem-mail.yaml
 ```
+
+利用できるシナリオ ID は `bin/siir list-definitions` で確認できます。
 
 ## Concept
 
-### 三段構造 (render-runbook)
+### 初動ランブックの 3 段構成
 
 ```mermaid
 graph TB
-  answers["org の責任境界表 answers"] --> s1["Stage 1<br/>責任境界表 (誰の責任か)"]
-  raci["incident-raci"] --> s2["Stage 2<br/>初動ランブック (Day 0-3 順序)"]
-  obl["obligations / clauses"] --> s2
-  s1 --> s3["Stage 3<br/>Communication Tree (誰がいつ何を言うか)"]
-  obl --> s3
+  answers["組織の責任境界表"] --> stage1["Stage 1<br/>責任境界表"]
+  raci["初動 RACI"] --> stage2["Stage 2<br/>Day 0 から Day 3 の活動"]
+  obligations["通知義務と DPA 条項"] --> stage2
+  stage1 --> stage3["Stage 3<br/>Communication Tree"]
+  obligations --> stage3
 ```
 
-- **Stage 1** は組織の記入済みセルを使い、空欄は推奨テンプレ(`recommended`)にフォールバックします(出典列に `org` / `recommended` を明示します)。
-- **Stage 2** は incident-raci の順序に SLA(obligation/clause から解決)を当て、シナリオの focus 項目に `*` を付けます。
-- **Stage 3** は通知義務から宛先別の分岐(利用者 / 報道 / 個情委 / 総務省)を組み立て、各分岐に主体と期限を当てます。
+- **Stage 1**：回答ファイルの RACI セルを表示します。
+  空欄のセルは定義の `recommended` を使い、出典を `org` または `recommended` として明示します。
+- **Stage 2**：初動 RACI を順序どおりに並べ、参照先の通知期限を表示します。
+  シナリオが重点項目として指定した活動には印を付けます。
+- **Stage 3**：利用者、報道、規制当局など、通知先ごとの分岐を表示します。
+  各分岐には主体、発火条件、期限、伝える範囲を含めます。
 
-### シナリオは機械可読 (拡張口)
+### Tabletop シナリオの構造
 
-Tabletop のシナリオはハードコードではなく、`definitions/scenarios.yaml` の機械可読定義です。同梱の `rce-6brand`(共有 SW の RCE → 6 ブランド同時公表)は、注入イベント(時系列)・ファシリ設問・focus 項目を持ちます。自社シナリオは overlay の `add` で追加できます。
+シナリオは `definitions/scenarios.yaml` に保存します。
+同梱の `rce-6brand` は、共有ソフトウェアの **RCE（Remote Code Execution、遠隔コード実行）**から複数ブランドの同時公表へ進む事案を扱います。
 
 ```mermaid
 graph LR
-  scenario["シナリオ"] -->|"injects[]"| inject["注入イベント (時系列)"]
-  scenario -->|"focus_items[]"| ref["責任項目 / アクティビティ参照"]
-  scenario -->|"facilitation_questions[]"| q["ファシリ設問"]
+  scenario["シナリオ"] -->|"injects[]"| injects["時系列の注入イベント"]
+  scenario -->|"focus_items[]"| focus["責任項目と活動"]
+  scenario -->|"facilitation_questions[]"| questions["ファシリテーション設問"]
   overlay["overlay"] -.->|"add"| scenario
 ```
 
-answers を渡すと focus 項目に自社の Accountable / 都度協議が注記され、汎用テンプレでなく**自社の表**を叩く演習になります。
+回答ファイルを渡すと、重点項目には組織の Accountable、または単独の Responsible が表示されます。
+したがって、演習では一般的な正解を確認するのではなく、自社で合意した分担が実際に機能するかを確認できます。
 
-### 反証 — 演習が "theater" 化しないために
+### 形式的な演習を避ける
 
-机上演習は、外部監査人を入れないと形式化します。本ランブックは「最初の 30 分を救う最小装備」であって銀の弾丸ではありません。多層防御・初動ランブック連携・グレーゾーン明記とセットで運用します。
+「ランブックを生成すれば初動能力を保証できる」という意味ではありません。
+生成物は、最初の 30 分に必要な分担と連絡を確認するための最小構成です。
+演習では、判断に使う証拠、連絡手段、代替担当、技術的な封じ込め手段まで実際に確認します。
 
 ## References
 
-- 正本: [`definitions/scenarios.yaml`](../definitions/scenarios.yaml)
-- 実装: [`src/siir/render_runbook.py`](../src/siir/render_runbook.py) / [`src/siir/tabletop.py`](../src/siir/tabletop.py)
+- シナリオの正本：[`definitions/scenarios.yaml`](../definitions/scenarios.yaml)
+- 初動 RACI の正本：[`definitions/incident-raci.yaml`](../definitions/incident-raci.yaml)
+- ランブック実装：[`src/siir/render_runbook.py`](../src/siir/render_runbook.py)
+- Tabletop 実装：[`src/siir/tabletop.py`](../src/siir/tabletop.py)

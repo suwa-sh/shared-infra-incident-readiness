@@ -1,59 +1,88 @@
 ---
 name: incident-runbook-render
-description: Render a shared-infrastructure incident initial-response runbook and Tabletop program from a scenario. Thin wrapper around `siir render-runbook` and `siir tabletop`; takes the org's responsibility-matrix answers + a scenario id and returns the 3-stage runbook (責任境界表 → Runbook → Communication Tree) and a facilitation program. Use when the user wants a runbook or a Tabletop exercise for a specific incident scenario.
+description: Render a shared-infrastructure initial-response runbook and Tabletop program from an organisation's responsibility answers and a scenario. Use the SIIR CLI to return the responsibility table, ordered runbook, Communication Tree, and facilitation program. Use when a user needs a runbook or Tabletop exercise for a specific incident scenario.
 ---
 
 # incident-runbook-render
 
-Render an initial-response runbook and a Tabletop exercise program from a
-machine-readable scenario. This skill is a thin wrapper around the `siir` CLI;
-the output is deterministic (same inputs → same Markdown), so it is reviewable.
+Use this skill to render an initial-response runbook and a Tabletop exercise from machine-readable SIIR definitions.
+The skill is a thin wrapper around `siir render-runbook` and `siir tabletop` and must not reproduce their rendering logic.
 
 ## When to use this skill
 
-- The user wants an initial-response runbook for a shared-infrastructure
-  incident scenario (e.g. "共有 SW の RCE → 6 ブランド同時公表")
-- The user wants to run a Tabletop exercise and needs a facilitation program
-- The user wants the Communication Tree (誰がいつ何を言うか) laid out
+- A user wants an initial-response runbook for a shared-infrastructure incident scenario.
+- A user needs a facilitation program for a Tabletop exercise.
+- A user wants to review the Communication Tree, including who communicates, when it triggers, and what the message may contain.
 
 ## Workflow
 
-0. Decide the overlay list first, and pass the SAME `--overlay <path>` list
-   (same order) to every command below. Overlay-added scenarios (e.g.
-   `agentic-attacker` from `overlays/agentic-attacker/scenarios.yaml`) do not
-   exist without their overlay — `tabletop` would fail with `unknown scenario`,
-   and `list-definitions` without the overlay would not show them. Multi-
-   definition commands route each overlay to the definition its `extends`
-   targets, so passing all selected overlays everywhere is safe.
-   `evaluation-containment` is a three-file bundle: always include its
-   scenarios, responsibility, and incident-raci files for a runbook or
-   Tabletop. Scenario-only use cannot resolve RB30-RB36 owners or AC20-AC26
-   ordering.
+### 1. Select and validate overlays
 
-1. List available scenarios:
-   `bin/siir list-definitions --format json --detail --overlay <path> ...` and
-   read the effective `items` from the scenarios, responsibility-matrix, and
-   incident-raci definitions. Use their item text, notes, cells, role names,
-   and scenario ids; do not hard-code descriptions or counts.
+Decide the complete ordered overlay list before selecting a scenario.
+Pass the same list, in the same order, to every command in this workflow.
 
-2. Obtain the org's responsibility answers YAML (the same shape used by
-   `incident-readiness-check`). If none exists, render against the recommended
-   template by passing a minimal answers file with just `target`.
+Validate every selected overlay first.
 
-3. Runbook: `bin/siir render-runbook <answers.yaml> --scenario <id>
-   --overlay <path> ...`. The output has three stages — responsibility table,
-   Day 0-3 runbook, communication tree.
+```bash
+bin/siir check-overlay <path>
+```
 
-4. Tabletop: `bin/siir tabletop --scenario <id> <answers.yaml>
-   --overlay <path> ...`. The output has the scenario overview, timed injects,
-   facilitation questions, and the focus items annotated with the owner
-   (Accountable, or a sole Responsible) from the org's actual table.
+Multi-definition commands route each file to the definition named by its `extends` value.
+An overlay-added scenario does not exist unless its scenario file is included.
 
-5. Present the Markdown as-is, or summarise the focus items and the first SLA
-   the org must hit (from the communication tree deadlines).
+Treat `evaluation-containment` as a three-file bundle.
+Include its scenarios, responsibility, and incident-raci files so that the CLI can resolve RB30 through RB36 owners and AC20 through AC26 ordering.
 
-## Failure modes to handle
+### 2. Inspect effective scenarios and definitions
 
-- Unknown scenario id → list valid ids from `list-definitions` and ask.
-- If `bin/siir` is not on PATH, fall back to `python -m siir.cli ...` with
-  `PYTHONPATH=<repo>/src`.
+```bash
+bin/siir list-definitions \
+  --format json \
+  --detail \
+  --overlay <path> ...
+```
+
+Read the effective `items` from the scenarios, responsibility-matrix, and incident-raci entries.
+Use their text, notes, cells, role names, and scenario IDs.
+Do not hard-code descriptions or counts.
+
+### 3. Obtain responsibility answers
+
+Use an answers YAML with the same shape as `incident-readiness-check`.
+If the organisation has no completed matrix, explain that blank cells fall back to the definition's `recommended` values.
+Use a minimal file containing only `target` only when the user accepts that fallback.
+
+### 4. Render the runbook
+
+```bash
+bin/siir render-runbook \
+  <answers.yaml> \
+  --scenario <id> \
+  --overlay <path> ...
+```
+
+The output has three stages: the responsibility table, the ordered initial-response activities, and the Communication Tree.
+
+### 5. Render the Tabletop program
+
+```bash
+bin/siir tabletop \
+  --scenario <id> \
+  <answers.yaml> \
+  --overlay <path> ...
+```
+
+The output includes the scenario overview, timed injects, facilitation questions, and focus-item owners derived from the organisation's answers.
+
+### 6. Present the result
+
+Return the generated Markdown unchanged when the user wants an operational artifact.
+When the user wants a review summary, lead with unresolved owners and the first notification deadline.
+Distinguish values supplied by the organisation from `recommended` fallback values.
+
+## Failure modes
+
+- If the scenario ID is unknown, list valid IDs from the effective definitions and ask the user to choose one.
+- If `bin/siir` is unavailable, run `python -m siir.cli ...` with `PYTHONPATH=<repo>/src`.
+- If a reference cannot be resolved, confirm that all files in the selected overlay bundle were passed in the same order.
+- If `check-overlay` fails, report the violation and stop before rendering.
