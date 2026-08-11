@@ -190,7 +190,7 @@ evaluation files plus the agentic responsibility file when rendering the
 scenario, so every answer ID, responsibility owner, and activity order resolves:
 
 ```bash
-siir render-runbook examples/responsibility/sample-evaluation-containment.yaml \
+bin/siir render-runbook examples/responsibility/sample-evaluation-containment.yaml \
   --scenario evaluation-containment \
   --overlay overlays/evaluation-containment/scenarios.yaml \
   --overlay overlays/evaluation-containment/responsibility.yaml \
