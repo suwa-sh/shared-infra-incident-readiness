@@ -29,3 +29,11 @@ def test_existing_version_image_fails_closed_before_attestation():
         workflow,
     )
     assert "grep -Eiq 'not found|manifest unknown|name unknown'" not in workflow
+
+
+def test_release_workflow_installs_documentation_checker_dependency():
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github" / "workflows" / "release.yml"
+    ).read_text(encoding="utf-8")
+    assert "- name: Install release verification dependencies" in workflow
+    assert 'run: python -m pip install ".[test]"' in workflow

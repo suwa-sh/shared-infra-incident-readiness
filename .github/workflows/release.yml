@@ -126,6 +126,9 @@ jobs:
           subject-digest: ${{ steps.publish.outputs.digest }}
           push-to-registry: true
 
+      - name: Install release verification dependencies
+        run: python -m pip install ".[test]"
+
       - name: Verify the released artifact boundary
         env:
           TAG: ${{ github.ref_name }}
