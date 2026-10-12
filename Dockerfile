@@ -1,4 +1,4 @@
-FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6 AS builder
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS builder
 
 WORKDIR /build
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir --require-hashes -r requirements-build.lock
 COPY src /build/src
 RUN pip wheel --no-cache-dir --no-build-isolation --no-deps --wheel-dir /wheels .
 
-FROM python:3.14-slim@sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
 
 # The pinned overlay engine version, passed by the release workflow (parsed from
 # pyproject). Recorded as an OCI label; the authoritative record is the baked-in
